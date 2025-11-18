@@ -1764,6 +1764,7 @@ GUILD CARDS (Index Page)
   padding: 0.5rem 0.75rem; /* 8px 12px */
   font-size: 0.8125rem; /* 13px */
   margin: 0;
+  color: var(--color-white);
 }
 
 .btn-delete:hover {
