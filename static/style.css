@@ -651,6 +651,7 @@ BUTTONS
   cursor: pointer;
   font-size: 0.875rem; /* 14px */
   font-weight: 500;
+  font-family: inherit;
   text-decoration: none !important;
 }
 
@@ -717,6 +718,18 @@ BUTTONS
 .btn.success:hover {
   background: rgb(var(--color-green-400) / 1);
   border-color: rgb(var(--color-green-400) / 1);
+  color: var(--color-white);
+}
+
+.btn-danger {
+  background: rgb(var(--color-red-600) / 1);
+  border-color: rgb(var(--color-red-600) / 1);
+  color: var(--color-white);
+}
+
+.btn-danger:hover {
+  background: rgb(var(--color-red-500) / 1);
+  border-color: rgb(var(--color-red-500) / 1);
   color: var(--color-white);
 }
 
