@@ -180,6 +180,12 @@ a:focus-visible {
   outline-color: var(--color-outline-focus);
 }
 
+/* Ensure button links keep white text */
+a.btn {
+  color: var(--color-white) !important;
+  text-decoration: none !important;
+}
+
 /* ================================================================================
 LAYOUT
 (Spacing converted to rem)
