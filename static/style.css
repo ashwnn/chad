@@ -845,20 +845,21 @@ textarea {
   display: inline-flex;
   align-items: center;
   cursor: pointer;
-  gap: 0.5rem; /* 8px */
+  gap: 0.75rem; /* 12px */
 }
 
 .toggle input[type="checkbox"] {
   width: auto;
   margin-right: 0;
   cursor: pointer;
+  display: none;
 }
 
 .toggle-switch {
   position: relative;
   display: inline-block;
-  width: 2.5rem; /* 40px (from guide) */
-  height: 1.25rem; /* 20px (from guide) */
+  width: 3rem; /* 48px */
+  height: 1.5rem; /* 24px */
   flex-shrink: 0;
 }
 
@@ -875,30 +876,34 @@ textarea {
   left: 0;
   right: 0;
   bottom: 0;
-  background: var(--color-border-interactive);
-  transition: background 0.2s, box-shadow 0.2s;
-  border-radius: 9999px; /* 24px -> pill */
+  background: rgb(var(--color-gray-300) / 1);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 9999px; /* pill shape */
+  border: 2px solid transparent;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .toggle-slider:before {
   position: absolute;
   content: "";
-  height: 0.875rem; /* 14px (from guide) */
-  width: 0.875rem; /* 14px (from guide) */
-  left: 0.1875rem; /* 3px (from guide) */
-  bottom: 0.1875rem; /* 3px (from guide) */
+  height: 1rem; /* 16px */
+  width: 1rem; /* 16px */
+  left: 0.25rem; /* 4px */
+  top: 50%;
+  transform: translateY(-50%);
   background: var(--color-white);
-  transition: transform 0.2s;
+  transition: left 0.3s ease;
   border-radius: 50%;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .toggle-switch input:checked + .toggle-slider {
-  background: rgb(var(--color-blue-500) / 1);
+  background: rgb(var(--color-green-500) / 1);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15), 0 0 8px rgba(14, 130, 93, 0.3);
 }
 
 .toggle-switch input:checked + .toggle-slider:before {
-  transform: translateX(1.25rem); /* 20px (40 - 14 - 3 - 3) */
+  left: calc(100% - 1rem - 0.25rem); /* Position on the right */
 }
 
 /* ================================================================================
