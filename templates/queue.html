@@ -9,7 +9,7 @@
 
 {% if pending | length == 0 %}
 <div class="card empty-state">
-  <p class="muted text-center">✓ No pending approvals</p>
+  <p class="muted text-center">No pending approvals</p>
 </div>
 {% else %}
 <div class="queue-info">
@@ -53,9 +53,9 @@
             </div>
             
             <div class="action-buttons">
-              <button class="btn btn-success" onclick="approve({{ item.id }}, 'grok')">✓ Approve via Grok</button>
-              <button class="btn btn-secondary" onclick="manual({{ item.id }})">👤 Manual Reply</button>
-              <button class="btn btn-danger" onclick="reject({{ item.id }})">✗ Reject</button>
+              <button class="btn btn-success" onclick="approve({{ item.id }}, 'grok')">Approve via Grok</button>
+              <button class="btn btn-secondary" onclick="manual({{ item.id }})">Manual Reply</button>
+              <button class="btn btn-danger" onclick="reject({{ item.id }})">Reject</button>
             </div>
           </div>
         </td>

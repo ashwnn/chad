@@ -46,6 +46,7 @@
         <th>Type</th>
         <th>Status</th>
         <th>Tokens</th>
+        <th>Cost</th>
         <th>Content</th>
       </tr>
     </thead>
@@ -79,10 +80,11 @@
           {% endif %}
         </td>
         <td class="text-sm">{{ row.total_tokens or '-' }}</td>
+        <td class="text-sm">{{ ('$%.4f'|format(row.estimated_cost_usd)) if row.estimated_cost_usd else '-' }}</td>
         <td class="text-sm preview-cell">{{ row.user_content[:60] }}</td>
       </tr>
       <tr class="details-row" style="display: none;">
-        <td colspan="6">
+        <td colspan="7">
           <div class="details-panel">
             <div class="details-grid">
               <div class="detail-section">

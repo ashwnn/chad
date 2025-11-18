@@ -265,7 +265,7 @@ const guildId = "{{ guild_id }}";
 // Load system prompt on page load
 document.addEventListener('DOMContentLoaded', async () => {
   const promptTextarea = document.getElementById('system_prompt');
-  const currentPrompt = "{{ config.system_prompt | e('js') }}";
+  const currentPrompt = {{ config.system_prompt | tojson }};
   promptTextarea.value = currentPrompt;
 });
 

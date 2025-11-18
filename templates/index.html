@@ -13,7 +13,7 @@
   <div class="guilds-grid">
     {% for guild_id in guilds %}
     <a href="/guilds/{{ guild_id }}" class="guild-card">
-      <div class="guild-icon">🏰</div>
+      <div class="guild-icon">G</div>
       <p class="guild-name">Guild {{ guild_id }}</p>
       <p class="guild-id">{{ guild_id }}</p>
       <p class="guild-link">Manage →</p>
@@ -48,7 +48,7 @@
     </li>
   </ol>
   
-  <p class="help-text">📚 Need more help? Check the README.md for detailed instructions.</p>
+  <p class="help-text">Need more help? Check the README.md for detailed instructions.</p>
 </div>
 {% endif %}
 
@@ -102,7 +102,16 @@
   }
 
   .guild-icon {
-    font-size: 2.5rem;
+    width: 48px;
+    height: 48px;
+    background: var(--color-blue-500);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 1.25rem;
   }
 
   .guild-name {

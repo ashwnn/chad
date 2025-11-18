@@ -14,7 +14,7 @@
 <div class="grid grid-cols-3">
   <div class="card stat-card">
     <p class="stat-label">Total Requests</p>
-    <p class="stat-value">{{ analytics.status_counts.values() | sum(attribute=0) | default(0) }}</p>
+    <p class="stat-value">{{ analytics.status_counts.values() | sum | default(0) }}</p>
     <p class="stat-subtitle">All time</p>
   </div>
 
@@ -25,9 +25,9 @@
   </div>
 
   <div class="card stat-card">
-    <p class="stat-label">Images Generated</p>
-    <p class="stat-value">{{ analytics.image_requests | default(0) }}</p>
-    <p class="stat-subtitle">Total image requests</p>
+    <p class="stat-label">Estimated Cost</p>
+    <p class="stat-value">${{ "%.4f"|format(analytics.total_cost_usd) }}</p>
+    <p class="stat-subtitle">Total API usage (grok-3-mini: $5/M tokens)</p>
   </div>
 </div>
 

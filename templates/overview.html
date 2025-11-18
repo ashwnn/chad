@@ -68,9 +68,9 @@
   </div>
 
   <div class="card">
-    <h3>Images Generated</h3>
-    <p style="font-size: 1.75rem; font-weight: 700; margin: 8px 0;">{{ analytics.image_requests }}</p>
-    <p class="muted text-sm">Total image requests</p>
+    <h3>Estimated Cost</h3>
+    <p style="font-size: 1.75rem; font-weight: 700; margin: 8px 0;">${{ "%.4f"|format(analytics.total_cost_usd) }}</p>
+    <p class="muted text-sm">Total API usage cost</p>
   </div>
 </div>
 
@@ -79,16 +79,16 @@
   <p class="page-subtitle">All time request statuses</p>
   <div class="status-grid">
     {% set statuses = [
-      ('auto_responded', 'Auto Responded', '📤'),
-      ('approved_grok', 'Approved via Grok', '✅'),
-      ('approved_manual', 'Approved Manually', '👤'),
-      ('rejected', 'Rejected', '❌'),
-      ('pending_approval', 'Pending Review', '⏳'),
-      ('error', 'Errors', '⚠️')
+      ('auto_responded', 'Auto Responded', '#2563eb'),
+      ('approved_grok', 'Approved via Grok', '#16a34a'),
+      ('approved_manual', 'Approved Manually', '#10b981'),
+      ('rejected', 'Rejected', '#dc2626'),
+      ('pending_approval', 'Pending Review', '#f59e0b'),
+      ('error', 'Errors', '#ef4444')
     ] %}
-    {% for key, label, icon in statuses %}
+    {% for key, label, color in statuses %}
     <div class="status-item">
-      <span class="status-icon">{{ icon }}</span>
+      <span class="status-icon" style="background-color: {{ color }};"></span>
       <div>
         <p class="status-label">{{ label }}</p>
         <p class="status-count">{{ analytics.status_counts.get(key, 0) }}</p>
@@ -190,8 +190,10 @@
   }
 
   .status-icon {
-    font-size: 1.5rem;
-    min-width: 32px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    min-width: 12px;
   }
 
   .status-label {
