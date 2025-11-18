@@ -31,6 +31,7 @@ class GuildConfig:
     temperature: float = 0.5
     max_completion_tokens: int = 1024
     max_prompt_chars: int = 4000
+    admin_user_ids: str = ""
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
     # Deprecated fields (kept for database compatibility, not used)
@@ -88,6 +89,7 @@ class Database:
                 temperature REAL DEFAULT 0.5,
                 max_completion_tokens INTEGER DEFAULT 1024,
                 max_prompt_chars INTEGER DEFAULT 4000,
+                admin_user_ids TEXT DEFAULT '',
                 created_at TEXT DEFAULT (datetime('now')),
                 updated_at TEXT DEFAULT (datetime('now'))
             );
@@ -152,6 +154,7 @@ class Database:
             """
         )
         await self._ensure_column("guild_config", "duplicate_window_seconds INTEGER DEFAULT 60")
+        await self._ensure_column("guild_config", "admin_user_ids TEXT DEFAULT ''")
         await self.conn.commit()
 
     async def _ensure_column(self, table: str, column_def: str) -> None:
@@ -173,7 +176,7 @@ class Database:
                     user_daily_chat_token_limit, global_daily_chat_token_limit,
                     user_daily_image_limit, global_daily_image_limit,
                     system_prompt, temperature, max_completion_tokens, max_prompt_chars,
-                    created_at, updated_at
+                    admin_user_ids, created_at, updated_at
                 ) VALUES (
                     :guild_id, :auto_approve_enabled, :admin_bypass_auto_approve,
                     :ask_window_seconds, :ask_max_per_window,
@@ -181,7 +184,7 @@ class Database:
                     :user_daily_chat_token_limit, :global_daily_chat_token_limit,
                     :user_daily_image_limit, :global_daily_image_limit,
                     :system_prompt, :temperature, :max_completion_tokens, :max_prompt_chars,
-                    COALESCE(:created_at, datetime('now')), datetime('now')
+                    :admin_user_ids, COALESCE(:created_at, datetime('now')), datetime('now')
                 )
                 ON CONFLICT(guild_id) DO UPDATE SET
                     auto_approve_enabled=excluded.auto_approve_enabled,
@@ -199,6 +202,7 @@ class Database:
                     temperature=excluded.temperature,
                     max_completion_tokens=excluded.max_completion_tokens,
                     max_prompt_chars=excluded.max_prompt_chars,
+                    admin_user_ids=excluded.admin_user_ids,
                     updated_at=datetime('now');
                 """,
                 fields,

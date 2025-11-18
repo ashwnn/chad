@@ -77,6 +77,12 @@
         Admins bypass auto-approve
       </label>
     </div>
+
+    <div class="form-group">
+      <label for="admin_user_ids">Administrator Discord IDs</label>
+      <input type="text" id="admin_user_ids" name="admin_user_ids" value="{{ config.admin_user_ids or '' }}" placeholder="e.g., 123456789,987654321">
+      <p class="form-hint">Comma-separated Discord user IDs that can approve requests</p>
+    </div>
   </section>
 
   <hr class="section-divider">
@@ -260,13 +266,22 @@ document.getElementById("config-form").addEventListener("submit", async (e) => {
   const formData = new FormData(e.target);
   const payload = {};
   
-  formData.forEach((value, key) => {
+  // Process all form fields
+  for (const [key, value] of formData.entries()) {
     if (key === "auto_approve_enabled" || key === "admin_bypass_auto_approve") {
-      payload[key] = formData.getAll(key).length > 0;
+      payload[key] = true;
     } else if (!isNaN(value) && value !== "") {
       payload[key] = Number(value);
     } else {
       payload[key] = value;
+    }
+  }
+  
+  // Explicitly set unchecked checkboxes to false
+  const checkboxes = e.target.querySelectorAll('input[type="checkbox"]');
+  checkboxes.forEach(checkbox => {
+    if (!(checkbox.name in payload)) {
+      payload[checkbox.name] = false;
     }
   });
 

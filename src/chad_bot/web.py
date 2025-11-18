@@ -35,6 +35,7 @@ class ConfigUpdate(BaseModel):
     temperature: Optional[float] = None
     max_completion_tokens: Optional[int] = None
     max_prompt_chars: Optional[int] = None
+    admin_user_ids: Optional[str] = None
 
 
 class ApprovalDecision(BaseModel):
