@@ -9,6 +9,24 @@ class DiscordApiClient:
     def __init__(self, token: Optional[str]):
         self.token = token
         self.base_url = "https://discord.com/api/v10"
+        # Persistent HTTP client with connection pooling
+        self._client: Optional[httpx.AsyncClient] = None
+
+    async def _get_client(self) -> httpx.AsyncClient:
+        """Get or create the persistent async HTTP client."""
+        if self._client is None:
+            self._client = httpx.AsyncClient(
+                base_url=self.base_url,
+                timeout=15.0,
+                limits=httpx.Limits(max_connections=100, max_keepalive_connections=20),
+            )
+        return self._client
+
+    async def close(self) -> None:
+        """Close the HTTP client and clean up resources."""
+        if self._client is not None:
+            await self._client.aclose()
+            self._client = None
 
     async def get_guild(self, guild_id: str) -> Optional[Dict[str, Any]]:
         """Fetch guild information from Discord API."""
@@ -16,20 +34,20 @@ class DiscordApiClient:
             logger.warning("Discord token missing, skipping guild fetch")
             return None
         
-        async with httpx.AsyncClient(base_url=self.base_url, timeout=15.0) as client:
-            try:
-                resp = await client.get(
-                    f"/guilds/{guild_id}",
-                    headers={"Authorization": f"Bot {self.token}"},
-                )
-                if resp.status_code >= 400:
-                    logger.error("Failed fetching guild %s: %s - %s", guild_id, resp.status_code, resp.text)
-                    return None
-                resp.raise_for_status()
-                return resp.json()
-            except Exception as exc:  # noqa: BLE001
-                logger.error("Error fetching guild %s: %s", guild_id, exc)
+        client = await self._get_client()
+        try:
+            resp = await client.get(
+                f"/guilds/{guild_id}",
+                headers={"Authorization": f"Bot {self.token}"},
+            )
+            if resp.status_code >= 400:
+                logger.error("Failed fetching guild %s: %s - %s", guild_id, resp.status_code, resp.text)
                 return None
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Error fetching guild %s: %s", guild_id, exc)
+            return None
 
     async def send_message(
         self,
@@ -65,16 +83,16 @@ class DiscordApiClient:
             if not mention_user_id:
                 payload["embeds"][0]["description"] = content
         
-        async with httpx.AsyncClient(base_url=self.base_url, timeout=15.0) as client:
-            resp = await client.post(
-                f"/channels/{channel_id}/messages",
-                headers={"Authorization": f"Bot {self.token}"},
-                json=payload,
-            )
-            if resp.status_code >= 400:
-                logger.error("Failed sending message to Discord: %s - %s", resp.status_code, resp.text)
-            resp.raise_for_status()
-            return resp.json()
+        client = await self._get_client()
+        resp = await client.post(
+            f"/channels/{channel_id}/messages",
+            headers={"Authorization": f"Bot {self.token}"},
+            json=payload,
+        )
+        if resp.status_code >= 400:
+            logger.error("Failed sending message to Discord: %s - %s", resp.status_code, resp.text)
+        resp.raise_for_status()
+        return resp.json()
 
     async def delete_message(self, channel_id: str, message_id: str) -> bool:
         """Delete a message from Discord.
@@ -90,18 +108,18 @@ class DiscordApiClient:
             logger.warning("Discord token missing, skipping delete")
             return False
         
-        async with httpx.AsyncClient(base_url=self.base_url, timeout=15.0) as client:
-            try:
-                resp = await client.delete(
-                    f"/channels/{channel_id}/messages/{message_id}",
-                    headers={"Authorization": f"Bot {self.token}"},
-                )
-                if resp.status_code >= 400:
-                    logger.error("Failed deleting message from Discord: %s - %s", resp.status_code, resp.text)
-                    return False
-                resp.raise_for_status()
-                logger.info("Successfully deleted message %s from channel %s", message_id, channel_id)
-                return True
-            except Exception as exc:  # noqa: BLE001
-                logger.error("Error deleting message %s: %s", message_id, exc)
+        client = await self._get_client()
+        try:
+            resp = await client.delete(
+                f"/channels/{channel_id}/messages/{message_id}",
+                headers={"Authorization": f"Bot {self.token}"},
+            )
+            if resp.status_code >= 400:
+                logger.error("Failed deleting message from Discord: %s - %s", resp.status_code, resp.text)
                 return False
+            resp.raise_for_status()
+            logger.info("Successfully deleted message %s from channel %s", message_id, channel_id)
+            return True
+        except Exception as exc:  # noqa: BLE001
+            logger.error("Error deleting message %s: %s", message_id, exc)
+            return False

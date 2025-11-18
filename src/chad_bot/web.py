@@ -64,6 +64,8 @@ def create_app(settings: Settings) -> FastAPI:
         logger.info("Web backend connected to %s", settings.database_path)
         yield
         # Shutdown
+        await grok.close()
+        await discord_api.close()
         await db.close()
 
     app = FastAPI(title="Chad Bot Admin", lifespan=lifespan)

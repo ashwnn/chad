@@ -1,8 +1,9 @@
 import asyncio
 import json
+import time
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import aiosqlite
 
@@ -48,6 +49,9 @@ class Database:
         self.path = path
         self._conn: Optional[aiosqlite.Connection] = None
         self._lock = asyncio.Lock()
+        # Guild config cache: {guild_id: (GuildConfig, timestamp)}
+        self._guild_config_cache: Dict[str, Tuple[GuildConfig, float]] = {}
+        self._cache_ttl_seconds = 300  # 5 minute cache TTL
 
     async def connect(self) -> None:
         self._conn = await aiosqlite.connect(self.path)
@@ -60,6 +64,8 @@ class Database:
         if self._conn:
             await self._conn.close()
             self._conn = None
+        # Clear cache on close
+        self._guild_config_cache.clear()
 
     @property
     def conn(self) -> aiosqlite.Connection:
@@ -215,16 +221,33 @@ class Database:
                 fields,
             )
             await self.conn.commit()
+        
+        # Invalidate cache after update
+        self._guild_config_cache.pop(config.guild_id, None)
+        
         return await self.get_guild_config(config.guild_id)
 
     async def get_guild_config(self, guild_id: str) -> GuildConfig:
+        # Check cache first
+        if guild_id in self._guild_config_cache:
+            cached_config, timestamp = self._guild_config_cache[guild_id]
+            if time.time() - timestamp < self._cache_ttl_seconds:
+                return cached_config
+        
+        # Cache miss or expired, fetch from database
         async with self.conn.execute(
             "SELECT * FROM guild_config WHERE guild_id = ?", (guild_id,)
         ) as cursor:
             row = await cursor.fetchone()
+        
         if not row:
-            return await self.upsert_guild_config(GuildConfig(guild_id=guild_id))
-        return GuildConfig(**dict(row))
+            config = await self.upsert_guild_config(GuildConfig(guild_id=guild_id))
+        else:
+            config = GuildConfig(**dict(row))
+        
+        # Update cache
+        self._guild_config_cache[guild_id] = (config, time.time())
+        return config
 
     async def add_admin(self, discord_user_id: str, guild_id: str, role: str = "admin") -> None:
         async with self._lock:
@@ -579,4 +602,7 @@ class Database:
             await self.conn.execute("DELETE FROM guild_daily_usage WHERE guild_id = ?", (guild_id,))
             await self.conn.execute("DELETE FROM message_log WHERE guild_id = ?", (guild_id,))
             await self.conn.commit()
+        
+        # Invalidate cache for deleted guild
+        self._guild_config_cache.pop(guild_id, None)
 

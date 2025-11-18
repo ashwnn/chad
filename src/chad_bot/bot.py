@@ -35,6 +35,15 @@ class ChadBot(commands.Bot):
         except Exception as e:
             logger.error(f"Failed to sync commands: {e}")
 
+    async def close(self) -> None:
+        """Close the bot and clean up resources."""
+        # Close HTTP clients
+        await self.processor.grok.close()
+        # Close database
+        await self.db.close()
+        # Call parent close
+        await super().close()
+
     async def on_ready(self):
         logger.info("Logged in as %s (%s)", self.user, self.user.id if self.user else "unknown")
         await self.change_presence(activity=discord.Game(name="/ask for questions"))
