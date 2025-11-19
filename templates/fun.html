@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Fun Actions - Chad Bot{% endblock %}
+
+{% block content %}
+<div class="md:flex md:items-center md:justify-between mb-8">
+    <div class="min-w-0 flex-1">
+        <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">Fun Actions
+        </h2>
+        <p class="mt-1 text-sm text-gray-500">Perform administrative actions on users.</p>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 gap-8 md:grid-cols-2">
+    <!-- Timeout User Card -->
+    <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
+        <div class="px-4 py-6 sm:p-8">
+            <h3 class="text-base font-semibold leading-7 text-gray-900">Timeout User</h3>
+            <p class="mt-1 text-sm leading-6 text-gray-600">Temporarily timeout a user in the server.</p>
+
+            <form id="timeout-form" class="mt-6 space-y-6">
+                <div>
+                    <label for="timeout_user_id" class="block text-sm font-medium leading-6 text-gray-900">User
+                        ID</label>
+                    <div class="mt-2">
+                        <input type="text" id="timeout_user_id" required placeholder="e.g. 123456789012345678"
+                            class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="timeout_duration" class="block text-sm font-medium leading-6 text-gray-900">Duration
+                        (seconds)</label>
+                    <div class="mt-2">
+                        <input type="number" id="timeout_duration" required min="1" value="60"
+                            class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit"
+                        class="rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">Timeout
+                        User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Nickname Card -->
+    <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl">
+        <div class="px-4 py-6 sm:p-8">
+            <h3 class="text-base font-semibold leading-7 text-gray-900">Change Nickname</h3>
+            <p class="mt-1 text-sm leading-6 text-gray-600">Change a user's nickname in the server.</p>
+
+            <form id="nickname-form" class="mt-6 space-y-6">
+                <div>
+                    <label for="nick_user_id" class="block text-sm font-medium leading-6 text-gray-900">User ID</label>
+                    <div class="mt-2">
+                        <input type="text" id="nick_user_id" required placeholder="e.g. 123456789012345678"
+                            class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="new_nickname" class="block text-sm font-medium leading-6 text-gray-900">New
+                        Nickname</label>
+                    <div class="mt-2">
+                        <input type="text" id="new_nickname" required placeholder="New nickname"
+                            class="block w-full rounded-md border-0 py-1.5 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+                    </div>
+                </div>
+
+                <div class="flex justify-end">
+                    <button type="submit"
+                        class="rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">Change
+                        Nickname</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div id="notification" class="fixed bottom-4 right-4 z-50 hidden">
+    <div class="rounded-md p-4 shadow-lg">
+        <div class="flex">
+            <div class="flex-shrink-0">
+                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+                        clip-rule="evenodd" />
+                </svg>
+            </div>
+            <div class="ml-3">
+                <p class="text-sm font-medium" id="notification-text"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function showStatus(message, type) {
+        const notification = document.getElementById('notification');
+        const text = document.getElementById('notification-text');
+        const icon = notification.querySelector('svg');
+
+        text.textContent = message;
+        notification.classList.remove('hidden');
+
+        if (type === 'success') {
+            notification.className = 'fixed bottom-4 right-4 z-50 rounded-md bg-green-50 p-4 shadow-lg ring-1 ring-green-600/20';
+            text.className = 'text-sm font-medium text-green-800';
+            icon.className = 'h-5 w-5 text-green-400';
+        } else {
+            notification.className = 'fixed bottom-4 right-4 z-50 rounded-md bg-red-50 p-4 shadow-lg ring-1 ring-red-600/20';
+            text.className = 'text-sm font-medium text-red-800';
+            icon.className = 'h-5 w-5 text-red-400';
+        }
+
+        setTimeout(() => {
+            notification.classList.add('hidden');
+        }, 5000);
+    }
+
+    document.getElementById('timeout-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const userId = document.getElementById('timeout_user_id').value;
+        const duration = document.getElementById('timeout_duration').value;
+
+        try {
+            const res = await fetch(`/api/guilds/{{ guild_id }}/fun/timeout`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, duration_seconds: parseInt(duration) })
+            });
+
+            if (res.ok) {
+                showStatus('User timed out successfully', 'success');
+                document.getElementById('timeout-form').reset();
+            } else {
+                const err = await res.json();
+                showStatus('Error: ' + (err.detail || 'Failed to timeout user'), 'error');
+            }
+        } catch (err) {
+            showStatus('Error: ' + err.message, 'error');
+        }
+    });
+
+    document.getElementById('nickname-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const userId = document.getElementById('nick_user_id').value;
+        const nickname = document.getElementById('new_nickname').value;
+
+        try {
+            const res = await fetch(`/api/guilds/{{ guild_id }}/fun/nickname`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: userId, nickname: nickname })
+            });
+
+            if (res.ok) {
+                showStatus('Nickname changed successfully', 'success');
+                document.getElementById('nickname-form').reset();
+            } else {
+                const err = await res.json();
+                showStatus('Error: ' + (err.detail || 'Failed to change nickname'), 'error');
+            }
+        } catch (err) {
+            showStatus('Error: ' + err.message, 'error');
+        }
+    });
+</script>
+{% endblock %}

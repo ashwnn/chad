@@ -123,3 +123,54 @@ class DiscordApiClient:
         except Exception as exc:  # noqa: BLE001
             logger.error("Error deleting message %s: %s", message_id, exc)
             return False
+    async def timeout_user(self, guild_id: str, user_id: str, duration_seconds: int) -> bool:
+        """Timeout a user in a guild."""
+        if not self.token:
+            logger.warning("Discord token missing, skipping timeout")
+            return False
+            
+        import datetime
+        
+        # Calculate timeout end time (ISO8601)
+        if duration_seconds > 0:
+            until = (datetime.datetime.utcnow() + datetime.timedelta(seconds=duration_seconds)).isoformat()
+        else:
+            until = None
+            
+        client = await self._get_client()
+        try:
+            resp = await client.patch(
+                f"/guilds/{guild_id}/members/{user_id}",
+                headers={"Authorization": f"Bot {self.token}"},
+                json={"communication_disabled_until": until}
+            )
+            if resp.status_code >= 400:
+                logger.error("Failed to timeout user %s: %s - %s", user_id, resp.status_code, resp.text)
+                return False
+            resp.raise_for_status()
+            return True
+        except Exception as exc:
+            logger.error("Error timing out user %s: %s", user_id, exc)
+            return False
+
+    async def modify_member(self, guild_id: str, user_id: str, nick: str) -> bool:
+        """Modify a guild member (e.g. change nickname)."""
+        if not self.token:
+            logger.warning("Discord token missing, skipping modify member")
+            return False
+            
+        client = await self._get_client()
+        try:
+            resp = await client.patch(
+                f"/guilds/{guild_id}/members/{user_id}",
+                headers={"Authorization": f"Bot {self.token}"},
+                json={"nick": nick}
+            )
+            if resp.status_code >= 400:
+                logger.error("Failed to modify member %s: %s - %s", user_id, resp.status_code, resp.text)
+                return False
+            resp.raise_for_status()
+            return True
+        except Exception as exc:
+            logger.error("Error modifying member %s: %s", user_id, exc)
+            return False
