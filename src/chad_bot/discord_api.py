@@ -174,3 +174,80 @@ class DiscordApiClient:
         except Exception as exc:
             logger.error("Error modifying member %s: %s", user_id, exc)
             return False
+    async def get_guild_roles(self, guild_id: str) -> Optional[list]:
+        """Fetch guild roles."""
+        if not self.token:
+            return None
+        
+        client = await self._get_client()
+        try:
+            resp = await client.get(
+                f"/guilds/{guild_id}/roles",
+                headers={"Authorization": f"Bot {self.token}"},
+            )
+            if resp.status_code >= 400:
+                logger.error("Failed fetching roles for guild %s: %s", guild_id, resp.status_code)
+                return None
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as exc:
+            logger.error("Error fetching roles for guild %s: %s", guild_id, exc)
+            return None
+
+    async def get_bot_member(self, guild_id: str) -> Optional[Dict[str, Any]]:
+        """Fetch bot member in guild."""
+        if not self.token:
+            return None
+            
+        client = await self._get_client()
+        try:
+            resp = await client.get(
+                f"/guilds/{guild_id}/members/@me",
+                headers={"Authorization": f"Bot {self.token}"},
+            )
+            if resp.status_code >= 400:
+                logger.error("Failed fetching bot member for guild %s: %s", guild_id, resp.status_code)
+                return None
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as exc:
+            logger.error("Error fetching bot member for guild %s: %s", guild_id, exc)
+            return None
+
+    async def check_fun_permissions(self, guild_id: str) -> bool:
+        """Check if bot has permissions for Fun features (Admin OR (Timeout AND Nickname))."""
+        roles = await self.get_guild_roles(guild_id)
+        member = await self.get_bot_member(guild_id)
+        
+        if not roles or not member:
+            return False
+            
+        # Permissions constants
+        ADMINISTRATOR = 1 << 3
+        MANAGE_NICKNAMES = 1 << 27
+        MODERATE_MEMBERS = 1 << 40
+        
+        # Create role map for easy lookup
+        role_map = {r["id"]: int(r["permissions"]) for r in roles}
+        
+        # Calculate permissions
+        permissions = 0
+        
+        # Add @everyone permissions (role_id == guild_id)
+        if guild_id in role_map:
+            permissions |= role_map[guild_id]
+            
+        # Add member role permissions
+        for role_id in member.get("roles", []):
+            if role_id in role_map:
+                permissions |= role_map[role_id]
+                
+        # Check Administrator
+        if permissions & ADMINISTRATOR:
+            return True
+            
+        # Check specific permissions
+        has_timeout = bool(permissions & MODERATE_MEMBERS)
+        has_nickname = bool(permissions & MANAGE_NICKNAMES)
+        
+        return has_timeout and has_nickname

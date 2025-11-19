@@ -27,7 +27,7 @@
               (optional)</label>
             <div class="mt-2">
               <input type="text" id="reply_prefix" placeholder="Text to add before every bot reply"
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
             </div>
             <p class="mt-1 text-sm text-gray-500">Leave empty for no prefix</p>
           </div>
@@ -37,7 +37,7 @@
               (optional)</label>
             <div class="mt-2">
               <input type="text" id="reply_suffix" placeholder="Text to add after every bot reply"
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
             </div>
             <p class="mt-1 text-sm text-gray-500">Leave empty for no suffix</p>
           </div>
@@ -57,7 +57,7 @@
         <div class="col-span-full">
           <div class="mt-2">
             <textarea id="system_prompt" rows="8" placeholder="Enter the system prompt..."
-              class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6"></textarea>
+              class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6"></textarea>
           </div>
           <p class="mt-3 text-sm leading-6 text-gray-600">Be specific about tone, content restrictions, and desired
             behavior. This is the fallback when guilds don't have a custom system prompt.</p>
@@ -88,7 +88,7 @@
             <label for="{{ key }}" class="block text-sm font-medium leading-6 text-gray-900">{{ label }}</label>
             <div class="mt-2">
               <input type="text" id="{{ key }}" placeholder="{{ placeholder }}"
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
             </div>
             {% if hint %}
             <p class="mt-1 text-sm text-gray-500">{{ hint }}</p>
@@ -115,7 +115,7 @@
               Limit</label>
             <div class="mt-2">
               <input type="text" id="msg_rate_limit_chat" placeholder="Message when chat rate limit hit"
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
             </div>
           </div>
         </div>
@@ -137,7 +137,7 @@
               Exhausted</label>
             <div class="mt-2">
               <input type="text" id="msg_chat_budget_user" placeholder="Message when user chat budget exhausted"
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
             </div>
           </div>
           <div class="sm:col-span-3">
@@ -145,7 +145,7 @@
               Budget Exhausted</label>
             <div class="mt-2">
               <input type="text" id="msg_chat_budget_guild" placeholder="Message when guild chat budget exhausted"
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
             </div>
           </div>
         </div>
@@ -171,7 +171,7 @@
             <label for="{{ key }}" class="block text-sm font-medium leading-6 text-gray-900">{{ label }}</label>
             <div class="mt-2">
               <input type="text" id="{{ key }}" placeholder="{{ placeholder }}"
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
             </div>
           </div>
           {% endfor %}
@@ -199,7 +199,7 @@
             <label for="{{ key }}" class="block text-sm font-medium leading-6 text-gray-900">{{ label }}</label>
             <div class="mt-2">
               <input type="text" id="{{ key }}" placeholder="{{ placeholder }}"
-                class="block w-full rounded-md border-0 py-1.5 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
             </div>
           </div>
           {% endfor %}

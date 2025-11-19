@@ -100,6 +100,8 @@ def create_app(settings: Settings) -> FastAPI:
         guild_info = await discord_api.get_guild(guild_id)
         guild_name = guild_info.get("name", f"Guild {guild_id}") if guild_info else f"Guild {guild_id}"
         
+        show_fun_tab = await discord_api.check_fun_permissions(guild_id)
+        
         return templates.TemplateResponse(
             "overview.html",
             {
@@ -113,6 +115,7 @@ def create_app(settings: Settings) -> FastAPI:
                 "usage": usage,
                 "analytics": analytics,
                 "model_pricing": {"prompt": processor.prompt_price_per_m_token, "completion": processor.completion_price_per_m_token, "model": settings.grok_chat_model},
+                "show_fun_tab": show_fun_tab,
             },
         )
 
@@ -121,6 +124,7 @@ def create_app(settings: Settings) -> FastAPI:
         config = await db.get_guild_config(guild_id)
         guild_info = await discord_api.get_guild(guild_id)
         guild_name = guild_info.get("name", f"Guild {guild_id}") if guild_info else f"Guild {guild_id}"
+        show_fun_tab = await discord_api.check_fun_permissions(guild_id)
         return templates.TemplateResponse(
             "config.html",
             {
@@ -129,6 +133,7 @@ def create_app(settings: Settings) -> FastAPI:
                 "guild_id": guild_id,
                 "guild_name": guild_name,
                 "config": config,
+                "show_fun_tab": show_fun_tab,
             },
         )
 
@@ -137,6 +142,7 @@ def create_app(settings: Settings) -> FastAPI:
         pending = await db.pending_messages(guild_id)
         guild_info = await discord_api.get_guild(guild_id)
         guild_name = guild_info.get("name", f"Guild {guild_id}") if guild_info else f"Guild {guild_id}"
+        show_fun_tab = await discord_api.check_fun_permissions(guild_id)
         return templates.TemplateResponse(
             "queue.html",
             {
@@ -145,6 +151,7 @@ def create_app(settings: Settings) -> FastAPI:
                 "guild_id": guild_id,
                 "guild_name": guild_name,
                 "pending": pending,
+                "show_fun_tab": show_fun_tab,
             },
         )
 
@@ -159,6 +166,7 @@ def create_app(settings: Settings) -> FastAPI:
         history = await db.history(guild_id, limit=limit, status=status, command_type=command_type)
         guild_info = await discord_api.get_guild(guild_id)
         guild_name = guild_info.get("name", f"Guild {guild_id}") if guild_info else f"Guild {guild_id}"
+        show_fun_tab = await discord_api.check_fun_permissions(guild_id)
         return templates.TemplateResponse(
             "history.html",
             {
@@ -170,6 +178,7 @@ def create_app(settings: Settings) -> FastAPI:
                 "status_filter": status,
                 "command_type_filter": command_type,
                 "model_pricing": {"prompt": processor.prompt_price_per_m_token, "completion": processor.completion_price_per_m_token, "model": settings.grok_chat_model},
+                "show_fun_tab": show_fun_tab,
             },
         )
 
@@ -179,6 +188,7 @@ def create_app(settings: Settings) -> FastAPI:
         recent_messages = await db.recent_messages(guild_id, limit=100)
         guild_info = await discord_api.get_guild(guild_id)
         guild_name = guild_info.get("name", f"Guild {guild_id}") if guild_info else f"Guild {guild_id}"
+        show_fun_tab = await discord_api.check_fun_permissions(guild_id)
         return templates.TemplateResponse(
             "analytics.html",
             {
@@ -189,6 +199,7 @@ def create_app(settings: Settings) -> FastAPI:
                 "analytics": analytics,
                 "recent": recent_messages,
                 "model_pricing": {"prompt": processor.prompt_price_per_m_token, "completion": processor.completion_price_per_m_token, "model": settings.grok_chat_model},
+                "show_fun_tab": show_fun_tab,
             },
         )
 
@@ -439,6 +450,7 @@ def create_app(settings: Settings) -> FastAPI:
     async def fun_page(request: Request, guild_id: str):
         guild_info = await discord_api.get_guild(guild_id)
         guild_name = guild_info.get("name", f"Guild {guild_id}") if guild_info else f"Guild {guild_id}"
+        show_fun_tab = await discord_api.check_fun_permissions(guild_id)
         return templates.TemplateResponse(
             "fun.html",
             {
@@ -446,6 +458,7 @@ def create_app(settings: Settings) -> FastAPI:
                 "page": "fun",
                 "guild_id": guild_id,
                 "guild_name": guild_name,
+                "show_fun_tab": show_fun_tab,
             },
         )
 
