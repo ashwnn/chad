@@ -18,6 +18,8 @@ services:
       - ./config:/app/config
     command: sh -c "python -m chad_bot.web"
     restart: unless-stopped
+    labels:
+      - "com.centurylinklabs.watchtower.enable=false"
     networks:
       - apps
     healthcheck:
