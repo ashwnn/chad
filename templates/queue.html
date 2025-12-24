@@ -4,81 +4,98 @@
 {% block content %}
 <div class="md:flex md:items-center md:justify-between mb-8">
   <div class="min-w-0 flex-1">
-    <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">Approval Queue</h2>
-    <p class="mt-1 text-sm text-gray-500">Review and approve pending requests.</p>
+    <h2 class="text-2xl font-bold leading-7 text-white sm:truncate sm:text-3xl sm:tracking-tight">Approval Queue</h2>
+    <p class="mt-2 text-sm text-vercel-text-secondary">Review and approve pending requests.</p>
   </div>
   <div class="mt-4 flex md:ml-4 md:mt-0">
     <span
-      class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
+      class="inline-flex items-center gap-x-1.5 rounded-full bg-vercel-blue/10 px-3 py-1.5 text-sm font-medium text-vercel-blue ring-1 ring-inset ring-vercel-blue/20">
+      <span class="h-2 w-2 rounded-full bg-vercel-blue animate-pulse"></span>
       {{ pending | length }} Pending
     </span>
   </div>
 </div>
 
 {% if pending | length == 0 %}
-<div class="text-center rounded-lg border-2 border-dashed border-gray-300 p-12">
-  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-  <h3 class="mt-2 text-sm font-semibold text-gray-900">No pending approvals</h3>
-  <p class="mt-1 text-sm text-gray-500">You're all caught up!</p>
+<div class="text-center rounded-xl border border-dashed border-vercel-border p-12">
+  <div class="mx-auto h-16 w-16 rounded-full bg-vercel-green/10 flex items-center justify-center mb-4">
+    <svg class="h-8 w-8 text-vercel-green" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+  </div>
+  <h3 class="text-sm font-semibold text-white">No pending approvals</h3>
+  <p class="mt-2 text-sm text-vercel-text-secondary">You're all caught up!</p>
 </div>
 {% else %}
-<div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-  <table class="min-w-full divide-y divide-gray-300">
-    <thead class="bg-gray-50">
-      <tr>
-        <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Time</th>
-        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">User</th>
-        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Type</th>
-        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Preview</th>
-        <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+<div class="rounded-xl bg-vercel-card border border-vercel-border overflow-hidden">
+  <table class="min-w-full divide-y divide-vercel-border">
+    <thead>
+      <tr class="bg-white/[0.02]">
+        <th scope="col"
+          class="py-3.5 pl-6 pr-3 text-left text-xs font-medium uppercase tracking-wider text-vercel-text-muted">Time
+        </th>
+        <th scope="col"
+          class="px-3 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-vercel-text-muted">User</th>
+        <th scope="col"
+          class="px-3 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-vercel-text-muted">Type</th>
+        <th scope="col"
+          class="px-3 py-3.5 text-left text-xs font-medium uppercase tracking-wider text-vercel-text-muted">Preview</th>
+        <th scope="col" class="relative py-3.5 pl-3 pr-6">
           <span class="sr-only">Actions</span>
         </th>
       </tr>
     </thead>
-    <tbody class="divide-y divide-gray-200 bg-white">
+    <tbody class="divide-y divide-vercel-border">
       {% for item in pending %}
-      <tr id="row-{{ item.id }}">
-        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500 sm:pl-6">{{ item.created_at | truncate(16,
-          True, '') }}</td>
-        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ item.user_id }}</td>
-        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
+      <tr id="row-{{ item.id }}" class="hover:bg-white/[0.02] transition-colors">
+        <td class="whitespace-nowrap py-4 pl-6 pr-3 text-sm text-vercel-text-secondary">{{ item.created_at |
+          truncate(16, True, '') }}</td>
+        <td class="whitespace-nowrap px-3 py-4 text-sm font-mono text-vercel-text-secondary">{{ item.user_id }}</td>
+        <td class="whitespace-nowrap px-3 py-4 text-sm">
           {% if item.command_type == 'ask' %}
           <span
-            class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">Chat</span>
+            class="inline-flex items-center rounded-full bg-vercel-blue/10 px-2.5 py-0.5 text-xs font-medium text-vercel-blue ring-1 ring-inset ring-vercel-blue/20">Chat</span>
           {% else %}
           <span
-            class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">{{
+            class="inline-flex items-center rounded-full bg-vercel-purple/10 px-2.5 py-0.5 text-xs font-medium text-vercel-purple ring-1 ring-inset ring-vercel-purple/20">{{
             item.command_type }}</span>
           {% endif %}
         </td>
-        <td class="px-3 py-4 text-sm text-gray-500 max-w-xs truncate">{{ item.user_content[:80] }}</td>
-        <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+        <td class="px-3 py-4 text-sm text-vercel-text-secondary max-w-xs truncate">{{ item.user_content[:80] }}</td>
+        <td class="relative whitespace-nowrap py-4 pl-3 pr-6 text-right text-sm font-medium">
           <button type="button" onclick="toggleDetails({{ item.id }})"
-            class="text-brand-600 hover:text-brand-900">Review</button>
+            class="text-vercel-blue hover:text-vercel-blue-light transition-colors">Review</button>
         </td>
       </tr>
-      <tr id="details-{{ item.id }}" class="hidden bg-gray-50">
-        <td colspan="5" class="px-4 py-4 sm:px-6">
-          <div class="rounded-md bg-white p-4 shadow-sm ring-1 ring-gray-900/5">
-            <h4 class="text-sm font-medium text-gray-900">Full Request</h4>
-            <p class="mt-2 text-sm text-gray-600 whitespace-pre-wrap">{{ item.user_content }}</p>
+      <tr id="details-{{ item.id }}" class="hidden">
+        <td colspan="5" class="p-0">
+          <div class="bg-white/[0.02] border-t border-vercel-border px-6 py-6">
+            <div class="rounded-lg bg-vercel-surface border border-vercel-border p-4">
+              <h4 class="text-sm font-medium text-white mb-3">Full Request</h4>
+              <p class="text-sm text-vercel-text-secondary whitespace-pre-wrap bg-black/30 p-4 rounded-lg font-mono">{{
+                item.user_content }}</p>
 
-            <div class="mt-4 flex gap-3 justify-end">
-              <button onclick="approve({{ item.id }}, 'grok', this)"
-                class="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:opacity-50 disabled:cursor-not-allowed">
-                Approve via Grok
-              </button>
-              <button onclick="manual({{ item.id }}, this)"
-                class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                Manual Reply
-              </button>
-              <button onclick="reject({{ item.id }}, this)"
-                class="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:opacity-50 disabled:cursor-not-allowed">
-                Reject
-              </button>
+              <div class="mt-6 flex gap-3 justify-end">
+                <button onclick="approve({{ item.id }}, 'grok', this)"
+                  class="inline-flex items-center gap-x-2 rounded-lg bg-vercel-green px-4 py-2 text-sm font-semibold text-black transition-all hover:bg-vercel-green/80 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                  </svg>
+                  Approve via Grok
+                </button>
+                <button onclick="manual({{ item.id }}, this)"
+                  class="inline-flex items-center gap-x-2 rounded-lg bg-white/10 border border-vercel-border px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed">
+                  Manual Reply
+                </button>
+                <button onclick="reject({{ item.id }}, this)"
+                  class="inline-flex items-center gap-x-2 rounded-lg bg-vercel-red px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-vercel-red/80 disabled:opacity-50 disabled:cursor-not-allowed">
+                  <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Reject
+                </button>
+              </div>
             </div>
           </div>
         </td>
@@ -100,7 +117,6 @@
   }
 
   async function approve(id, decision, btn) {
-    // Disable all buttons in this row to prevent double-submit
     const container = btn.closest('.flex');
     const buttons = container.querySelectorAll('button');
     buttons.forEach(b => b.disabled = true);
@@ -112,7 +128,7 @@
 
     if (decision === "reject") {
       const reason = prompt("Reason for rejection (optional):");
-      if (reason === null) { // Cancelled
+      if (reason === null) {
         buttons.forEach(b => b.disabled = false);
         btn.innerText = originalText;
         return;
@@ -122,7 +138,7 @@
 
     if (decision === "manual") {
       const reply = prompt("Enter your manual reply:");
-      if (reply === null) { // Cancelled
+      if (reply === null) {
         buttons.forEach(b => b.disabled = false);
         btn.innerText = originalText;
         return;
@@ -144,14 +160,11 @@
       });
 
       if (res.ok) {
-        // Remove the row from the table smoothly
         const row = document.getElementById(`row-${id}`);
         const details = document.getElementById(`details-${id}`);
         row.remove();
         details.remove();
 
-        // Update count if possible, or just let it be until refresh
-        // Ideally we check if table is empty and show empty state, but reload is fine if empty
         const remaining = document.querySelectorAll('tbody tr').length;
         if (remaining === 0) {
           location.reload();

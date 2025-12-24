@@ -1,86 +1,164 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full bg-gray-50">
+<html lang="en" class="h-full">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}Chad Bot Admin{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Geist Font (Vercel's typeface) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['Geist Mono', 'monospace'],
           },
           colors: {
-            brand: {
-              50: '#f0f9ff',
-              100: '#e0f2fe',
-              200: '#bae6fd',
-              300: '#7dd3fc',
-              400: '#38bdf8',
-              500: '#0ea5e9',
-              600: '#0284c7',
-              700: '#0369a1',
-              800: '#075985',
-              900: '#0c4a6e',
+            vercel: {
+              bg: '#000000',
+              surface: '#0a0a0a',
+              card: '#111111',
+              border: 'rgba(255, 255, 255, 0.08)',
+              'border-hover': 'rgba(255, 255, 255, 0.15)',
+              text: '#fafafa',
+              'text-secondary': '#888888',
+              'text-muted': '#666666',
+              blue: '#0070f3',
+              'blue-light': '#3291ff',
+              cyan: '#79ffe1',
+              purple: '#7928ca',
+              pink: '#ff0080',
+              orange: '#f5a623',
+              green: '#50e3c2',
+              red: '#e00',
             }
-          }
+          },
+          backgroundImage: {
+            'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+            'glow': 'linear-gradient(to right, #0070f3, #7928ca)',
+          },
+          boxShadow: {
+            'glow': '0 0 20px rgba(0, 112, 243, 0.3)',
+            'glow-sm': '0 0 10px rgba(0, 112, 243, 0.2)',
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.3s ease-out',
+            'slide-up': 'slideUp 0.3s ease-out',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { opacity: '0', transform: 'translateY(10px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+          },
         }
       }
     }
   </script>
+  
   <style>
-    /* Custom scrollbar for Webkit */
+    /* Custom scrollbar */
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
     }
-
     ::-webkit-scrollbar-track {
       background: transparent;
     }
-
     ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
+      background: rgba(255, 255, 255, 0.1);
       border-radius: 4px;
     }
-
     ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
+      background: rgba(255, 255, 255, 0.2);
     }
 
-    [x-cloak] {
-      display: none !important;
+    [x-cloak] { display: none !important; }
+
+    /* Gradient border effect */
+    .gradient-border {
+      position: relative;
+    }
+    .gradient-border::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      padding: 1px;
+      border-radius: inherit;
+      background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    /* Glow effect on hover */
+    .hover-glow {
+      transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+    .hover-glow:hover {
+      box-shadow: 0 0 20px rgba(0, 112, 243, 0.15);
+      border-color: rgba(0, 112, 243, 0.3);
+    }
+
+    /* Smooth transitions */
+    * {
+      transition-property: background-color, border-color, color, fill, stroke;
+      transition-duration: 150ms;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* Focus states */
+    input:focus, select:focus, textarea:focus, button:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(0, 112, 243, 0.5);
     }
   </style>
+  
   <!-- Alpine.js for interactivity -->
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
   {% block extra_head %}{% endblock %}
 </head>
 
-<body class="h-full font-sans text-gray-900 antialiased" x-data="{ sidebarOpen: false }">
+<body class="h-full bg-black text-white font-sans antialiased" x-data="{ sidebarOpen: false }">
 
   <!-- Mobile sidebar backdrop -->
-  <div x-show="sidebarOpen" x-transition:enter="transition-opacity ease-linear duration-300"
-    x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-    x-transition:leave="transition-opacity ease-linear duration-300" x-transition:leave-start="opacity-100"
-    x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-900/80 z-40 lg:hidden" @click="sidebarOpen = false"
+  <div x-show="sidebarOpen" 
+    x-transition:enter="transition-opacity ease-linear duration-300"
+    x-transition:enter-start="opacity-0" 
+    x-transition:enter-end="opacity-100"
+    x-transition:leave="transition-opacity ease-linear duration-300" 
+    x-transition:leave-start="opacity-100"
+    x-transition:leave-end="opacity-0" 
+    class="fixed inset-0 bg-black/80 backdrop-blur-sm z-40 lg:hidden" 
+    @click="sidebarOpen = false"
     x-cloak></div>
 
   <!-- Mobile sidebar -->
-  <div x-show="sidebarOpen" x-transition:enter="transition ease-in-out duration-300 transform"
-    x-transition:enter-start="-translate-x-full" x-transition:enter-end="translate-x-0"
-    x-transition:leave="transition ease-in-out duration-300 transform" x-transition:leave-start="translate-x-0"
+  <div x-show="sidebarOpen" 
+    x-transition:enter="transition ease-in-out duration-300 transform"
+    x-transition:enter-start="-translate-x-full" 
+    x-transition:enter-end="translate-x-0"
+    x-transition:leave="transition ease-in-out duration-300 transform" 
+    x-transition:leave-start="translate-x-0"
     x-transition:leave-end="-translate-x-full"
-    class="fixed inset-y-0 left-0 z-50 w-72 bg-white px-6 pb-4 overflow-y-auto lg:hidden" x-cloak>
+    class="fixed inset-y-0 left-0 z-50 w-72 bg-vercel-surface border-r border-vercel-border px-6 pb-4 overflow-y-auto lg:hidden" 
+    x-cloak>
     <div class="flex h-16 shrink-0 items-center">
       <img class="h-8 w-auto" src="/static/chad.png" alt="Chad Bot">
-      <span class="ml-3 text-lg font-bold text-gray-900">Chad Bot</span>
+      <span class="ml-3 text-lg font-semibold text-white tracking-tight">Chad Bot</span>
     </div>
     <nav class="flex flex-1 flex-col">
       <ul role="list" class="flex flex-1 flex-col gap-y-7">
@@ -95,10 +173,10 @@
 
   <!-- Desktop sidebar -->
   <div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-    <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
+    <div class="flex grow flex-col gap-y-5 overflow-y-auto bg-vercel-surface border-r border-vercel-border px-6 pb-4">
       <div class="flex h-16 shrink-0 items-center">
         <img class="h-8 w-auto" src="/static/chad.png" alt="Chad Bot">
-        <span class="ml-3 text-lg font-bold text-gray-900">Chad Bot</span>
+        <span class="ml-3 text-lg font-semibold text-white tracking-tight">Chad Bot</span>
       </div>
       <nav class="flex flex-1 flex-col">
         <ul role="list" class="flex flex-1 flex-col gap-y-7">
@@ -108,7 +186,7 @@
             </ul>
           </li>
           <li class="mt-auto">
-            <div class="text-xs font-semibold leading-6 text-gray-400">v1.0.0</div>
+            <div class="text-xs font-medium text-vercel-text-muted">v1.0.0</div>
           </li>
         </ul>
       </nav>
@@ -116,12 +194,10 @@
   </div>
 
   <div class="lg:pl-72">
-    <div
-      class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
-      <button type="button" class="-m-2.5 p-2.5 text-gray-700 lg:hidden" @click="sidebarOpen = true">
+    <div class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-vercel-border bg-black/80 backdrop-blur-md px-4 sm:gap-x-6 sm:px-6 lg:px-8">
+      <button type="button" class="-m-2.5 p-2.5 text-vercel-text-secondary hover:text-white lg:hidden" @click="sidebarOpen = true">
         <span class="sr-only">Open sidebar</span>
-        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-          aria-hidden="true">
+        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
         </svg>
       </button>
@@ -129,16 +205,16 @@
       <div class="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
         <div class="flex flex-1 items-center">
           {% if guild_id %}
-          <span
-            class="inline-flex items-center rounded-md bg-brand-50 px-2 py-1 text-xs font-medium text-brand-700 ring-1 ring-inset ring-brand-700/10">
-            Guild: {{ guild_name }} ({{ guild_id }})
+          <span class="inline-flex items-center gap-x-1.5 rounded-full bg-vercel-card border border-vercel-border px-3 py-1 text-xs font-medium text-vercel-text-secondary">
+            <span class="h-1.5 w-1.5 rounded-full bg-vercel-green"></span>
+            {{ guild_name }}
           </span>
           {% endif %}
         </div>
       </div>
     </div>
 
-    <main class="py-10">
+    <main class="py-10 animate-fade-in">
       <div class="px-4 sm:px-6 lg:px-8">
         {% block content %}{% endblock %}
       </div>
