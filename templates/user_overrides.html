@@ -102,8 +102,10 @@
                 </div>
                 <div class="flex items-center gap-2 ml-4">
                     <button type="button"
-                        onclick="openEditModal({{ override.id }}, '{{ override.override_type }}', {{ override.custom_response|tojson if override.custom_response else 'null' }}, {{ override.custom_system_prompt|tojson if override.custom_system_prompt else 'null' }})"
-                        class="rounded-lg px-3 py-1.5 text-xs font-medium bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all">
+                        class="edit-btn rounded-lg px-3 py-1.5 text-xs font-medium bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-all"
+                        data-id="{{ override.id }}" data-type="{{ override.override_type }}"
+                        data-response="{{ override.custom_response|e if override.custom_response else '' }}"
+                        data-prompt="{{ override.custom_system_prompt|e if override.custom_system_prompt else '' }}">
                         View/Edit
                     </button>
                     <button type="button"
@@ -368,6 +370,17 @@
         if (e.key === 'Escape') {
             closeEditModal();
         }
+    });
+
+    // Attach click handlers to edit buttons using data attributes
+    document.querySelectorAll('.edit-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            const overrideId = this.dataset.id;
+            const overrideType = this.dataset.type;
+            const customResponse = this.dataset.response || '';
+            const customSystemPrompt = this.dataset.prompt || '';
+            openEditModal(overrideId, overrideType, customResponse, customSystemPrompt);
+        });
     });
 </script>
 {% endblock %}
