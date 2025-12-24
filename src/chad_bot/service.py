@@ -247,7 +247,7 @@ class RequestProcessor:
         query: str,
     ) -> ProcessResult:
         """
-        Process a /search command using Gemini with Google Search grounding.
+        Process a /googl command using Gemini with Google Search grounding.
         Applies spam filtering to reduce token expenditure.
         """
         config = await self.db.get_guild_config(guild_id)
@@ -262,7 +262,7 @@ class RequestProcessor:
                 channel_id=channel_id,
                 user_id=user_id,
                 discord_message_id=discord_message_id,
-                command_type="search",
+                command_type="googl",
                 user_content=query,
                 status="auto_responded",
                 error_code=validation.reason,
@@ -284,7 +284,7 @@ class RequestProcessor:
                 channel_id=channel_id,
                 user_id=user_id,
                 discord_message_id=discord_message_id,
-                command_type="search",
+                command_type="googl",
                 user_content=query,
                 status="auto_responded",
                 error_code="duplicate",
@@ -298,7 +298,7 @@ class RequestProcessor:
             self.db,
             guild_id=guild_id,
             user_id=user_id,
-            command_type="search",
+            command_type="googl",
             rule=rate_limit_rule,
             yaml_config=self.yaml_config,
         )
@@ -311,7 +311,7 @@ class RequestProcessor:
                 channel_id=channel_id,
                 user_id=user_id,
                 discord_message_id=discord_message_id,
-                command_type="search",
+                command_type="googl",
                 user_content=query,
                 status="auto_responded",
                 error_code="rate_limited",
@@ -327,7 +327,7 @@ class RequestProcessor:
                 channel_id=channel_id,
                 user_id=user_id,
                 discord_message_id=discord_message_id,
-                command_type="search",
+                command_type="googl",
                 user_content=query,
                 status="error",
                 error_code="gemini_not_configured",
@@ -345,7 +345,7 @@ class RequestProcessor:
                 channel_id=channel_id,
                 user_id=user_id,
                 discord_message_id=discord_message_id,
-                command_type="search",
+                command_type="googl",
                 user_content=query,
                 status="error",
                 error_code="gemini_error",
@@ -369,7 +369,7 @@ class RequestProcessor:
             channel_id=channel_id,
             user_id=user_id,
             discord_message_id=discord_message_id,
-            command_type="search",
+            command_type="googl",
             user_content=query,
             grok_request_payload={"model": self.gemini.model if self.gemini else "unknown"},
             grok_response_content=search_result.content,

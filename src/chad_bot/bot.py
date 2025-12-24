@@ -213,9 +213,9 @@ def create_bot(settings: Settings) -> ChadBot:
         
         logger.info("Handled /ask from %s (admin: %s)", interaction.user.id, is_admin)
 
-    @bot.tree.command(name="search", description="Search for accurate information using Google")
+    @bot.tree.command(name="googl", description="Search for accurate information using Google")
     @app_commands.describe(query="What do you want to search for?")
-    async def search_slash(interaction: discord.Interaction, query: str):
+    async def googl_slash(interaction: discord.Interaction, query: str):
         """Slash command for searching with Gemini + Google Search grounding."""
         guild_id = str(interaction.guild.id) if interaction.guild else None
         if not guild_id:
@@ -245,7 +245,7 @@ def create_bot(settings: Settings) -> ChadBot:
                 result.log_id
             )
         
-        logger.info("Handled /search from %s", interaction.user.id)
+        logger.info("Handled /googl from %s", interaction.user.id)
 
     return bot
 
