@@ -129,6 +129,35 @@ class DiscordApiClient:
             logger.error("Error fetching roles for guild %s: %s", guild_id, exc)
             return None
 
+    async def get_guild_channels(self, guild_id: str) -> Optional[list]:
+        """Fetch guild channels, returning only text channels."""
+        if not self.token:
+            return None
+        
+        client = await self._get_client()
+        try:
+            resp = await client.get(
+                f"/guilds/{guild_id}/channels",
+                headers={"Authorization": f"Bot {self.token}"},
+            )
+            if resp.status_code >= 400:
+                logger.error("Failed fetching channels for guild %s: %s", guild_id, resp.status_code)
+                return None
+            resp.raise_for_status()
+            channels = resp.json()
+            # Filter to text channels only (type 0 = text channel)
+            # Also include type 5 (announcement channels) as they support text messages
+            text_channels = [
+                ch for ch in channels 
+                if ch.get("type") in (0, 5)
+            ]
+            # Sort by position
+            text_channels.sort(key=lambda x: x.get("position", 0))
+            return text_channels
+        except Exception as exc:
+            logger.error("Error fetching channels for guild %s: %s", guild_id, exc)
+            return None
+
     async def get_bot_member(self, guild_id: str) -> Optional[Dict[str, Any]]:
         """Fetch bot member in guild."""
         if not self.token:

@@ -10,7 +10,7 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
 
 from .config import Settings
-from .database import GuildConfig, Database
+from .database import GuildConfig, Database, UserOverride
 from .discord_api import DiscordApiClient
 from .grok_client import GrokClient
 from .service import RequestProcessor
@@ -38,6 +38,27 @@ class ApprovalDecision(BaseModel):
     decision: str
     manual_reply_content: Optional[str] = None
     reason: Optional[str] = None
+
+
+class SendMessageRequest(BaseModel):
+    channel_id: str
+    content: str
+    mention_user_id: Optional[str] = None
+
+
+class UserOverrideRequest(BaseModel):
+    discord_user_id: str
+    override_type: str = "custom_response"  # "custom_response" or "custom_prompt"
+    custom_response: Optional[str] = None
+    custom_system_prompt: Optional[str] = None
+    enabled: bool = True
+
+
+class UserOverrideUpdate(BaseModel):
+    override_type: Optional[str] = None
+    custom_response: Optional[str] = None
+    custom_system_prompt: Optional[str] = None
+    enabled: Optional[bool] = None
 
 
 def create_app(settings: Settings) -> FastAPI:
@@ -213,6 +234,40 @@ def create_app(settings: Settings) -> FastAPI:
             },
         )
 
+    @app.get("/guilds/{guild_id}/send-message", response_class=HTMLResponse)
+    async def send_message_page(request: Request, guild_id: str):
+        guild_info = await discord_api.get_guild(guild_id)
+        guild_name = guild_info.get("name", f"Guild {guild_id}") if guild_info else f"Guild {guild_id}"
+        channels = await discord_api.get_guild_channels(guild_id) or []
+
+        return templates.TemplateResponse(
+            "send_message.html",
+            {
+                "request": request,
+                "page": "send_message",
+                "guild_id": guild_id,
+                "guild_name": guild_name,
+                "channels": channels,
+            },
+        )
+
+    @app.get("/guilds/{guild_id}/user-overrides", response_class=HTMLResponse)
+    async def user_overrides_page(request: Request, guild_id: str):
+        guild_info = await discord_api.get_guild(guild_id)
+        guild_name = guild_info.get("name", f"Guild {guild_id}") if guild_info else f"Guild {guild_id}"
+        overrides = await db.list_user_overrides(guild_id)
+
+        return templates.TemplateResponse(
+            "user_overrides.html",
+            {
+                "request": request,
+                "page": "user_overrides",
+                "guild_id": guild_id,
+                "guild_name": guild_name,
+                "overrides": overrides,
+            },
+        )
+
     @app.get("/api/guilds/{guild_id}/config")
     async def get_config(guild_id: str):
         config = await db.get_guild_config(guild_id)
@@ -261,6 +316,90 @@ def create_app(settings: Settings) -> FastAPI:
     @app.get("/api/guilds/{guild_id}/analytics")
     async def get_analytics(guild_id: str):
         return await db.analytics(guild_id)
+
+    @app.get("/api/guilds/{guild_id}/channels")
+    async def get_channels(guild_id: str):
+        """Get text channels for a guild."""
+        channels = await discord_api.get_guild_channels(guild_id)
+        if channels is None:
+            raise HTTPException(status_code=502, detail="Failed to fetch channels from Discord")
+        return channels
+
+    @app.post("/api/guilds/{guild_id}/send-message")
+    async def send_custom_message(guild_id: str, payload: SendMessageRequest):
+        """Send a custom message to a channel in the guild."""
+        try:
+            result = await discord_api.send_message(
+                channel_id=payload.channel_id,
+                content=payload.content,
+                mention_user_id=payload.mention_user_id,
+            )
+            if result:
+                return {"status": "sent", "message_id": result.get("id")}
+            raise HTTPException(status_code=502, detail="Failed to send message to Discord")
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("Error sending custom message: %s", exc)
+            raise HTTPException(status_code=502, detail=str(exc))
+
+    # User Override endpoints
+    @app.get("/api/guilds/{guild_id}/user-overrides")
+    async def list_user_overrides(guild_id: str):
+        """List all user overrides for a guild."""
+        overrides = await db.list_user_overrides(guild_id)
+        return [{"id": o.id, "discord_user_id": o.discord_user_id, "override_type": o.override_type,
+                 "custom_response": o.custom_response, "custom_system_prompt": o.custom_system_prompt,
+                 "enabled": o.enabled, "created_at": o.created_at, "updated_at": o.updated_at}
+                for o in overrides]
+
+    @app.post("/api/guilds/{guild_id}/user-overrides")
+    async def create_user_override(guild_id: str, payload: UserOverrideRequest):
+        """Create a new user override."""
+        # Validate user ID is numeric
+        if not payload.discord_user_id.strip().isdigit():
+            raise HTTPException(status_code=400, detail="Discord User ID must be numeric")
+        
+        # Validate override_type
+        if payload.override_type not in ("custom_response", "custom_prompt"):
+            raise HTTPException(status_code=400, detail="override_type must be 'custom_response' or 'custom_prompt'")
+        
+        override = UserOverride(
+            guild_id=guild_id,
+            discord_user_id=payload.discord_user_id.strip(),
+            override_type=payload.override_type,
+            custom_response=payload.custom_response,
+            custom_system_prompt=payload.custom_system_prompt,
+            enabled=payload.enabled,
+        )
+        result = await db.add_user_override(override)
+        return {"id": result.id, "discord_user_id": result.discord_user_id, "override_type": result.override_type,
+                "custom_response": result.custom_response, "custom_system_prompt": result.custom_system_prompt,
+                "enabled": result.enabled, "created_at": result.created_at, "updated_at": result.updated_at}
+
+    @app.put("/api/guilds/{guild_id}/user-overrides/{override_id}")
+    async def update_user_override_endpoint(guild_id: str, override_id: int, payload: UserOverrideUpdate):
+        """Update a user override."""
+        if payload.override_type is not None and payload.override_type not in ("custom_response", "custom_prompt"):
+            raise HTTPException(status_code=400, detail="override_type must be 'custom_response' or 'custom_prompt'")
+        
+        update_data = payload.model_dump(exclude_none=True)
+        if not update_data:
+            raise HTTPException(status_code=400, detail="No fields to update")
+        
+        result = await db.update_user_override(override_id, **update_data)
+        if not result:
+            raise HTTPException(status_code=404, detail="User override not found")
+        
+        return {"id": result.id, "discord_user_id": result.discord_user_id, "override_type": result.override_type,
+                "custom_response": result.custom_response, "custom_system_prompt": result.custom_system_prompt,
+                "enabled": result.enabled, "created_at": result.created_at, "updated_at": result.updated_at}
+
+    @app.delete("/api/guilds/{guild_id}/user-overrides/{override_id}")
+    async def delete_user_override_endpoint(guild_id: str, override_id: int):
+        """Delete a user override."""
+        success = await db.delete_user_override(override_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="User override not found")
+        return {"status": "deleted", "override_id": override_id}
 
     # YAML Configuration endpoints
     @app.get("/api/yaml-config")

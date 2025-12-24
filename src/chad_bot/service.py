@@ -145,8 +145,34 @@ class RequestProcessor:
             reply = self.yaml_config.format_reply(self.yaml_config.get_message("pending_approval_chat"))
             return ProcessResult(reply=reply, log_id=log_id, status="pending_approval")
 
-        # Use guild-specific system prompt, fallback to YAML config if not set
-        system_prompt = config.system_prompt if config.system_prompt else self.yaml_config.get_system_prompt()
+        # Check for user-specific overrides
+        user_override = await self.db.get_enabled_user_override(guild_id, user_id)
+        
+        # Handle custom_response override - return static response without AI
+        if user_override and user_override.override_type == "custom_response" and user_override.custom_response:
+            log_id = await self.db.record_message(
+                guild_id=guild_id,
+                channel_id=channel_id,
+                user_id=user_id,
+                discord_message_id=discord_message_id,
+                command_type="ask",
+                user_content=content,
+                status="auto_responded",
+                grok_response_content=user_override.custom_response,
+                decision="user_override",
+            )
+            formatted_reply = self.yaml_config.format_reply(user_override.custom_response)
+            reply_with_question = f"**Question:** {content}\n\n{formatted_reply}"
+            return ProcessResult(reply=reply_with_question, log_id=log_id, status="auto_responded")
+
+        # Determine system prompt: user override > guild config > YAML config
+        if user_override and user_override.override_type == "custom_prompt" and user_override.custom_system_prompt:
+            system_prompt = user_override.custom_system_prompt
+        elif config.system_prompt:
+            system_prompt = config.system_prompt
+        else:
+            system_prompt = self.yaml_config.get_system_prompt()
+
         try:
             grok_result = await self.grok.chat(
                 system_prompt=system_prompt,

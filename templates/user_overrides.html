@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}User Overrides - Chad Bot{% endblock %}
+
+{% block content %}
+<div class="md:flex md:items-center md:justify-between mb-8">
+    <div class="min-w-0 flex-1">
+        <h2 class="text-2xl font-bold leading-7 text-white sm:truncate sm:text-3xl sm:tracking-tight">User Overrides
+        </h2>
+        <p class="mt-2 text-sm text-vercel-text-secondary">Configure custom AI responses or prompts for specific users.
+        </p>
+    </div>
+</div>
+
+<!-- Add New Override Form -->
+<div class="rounded-xl bg-vercel-card border border-vercel-border overflow-hidden mb-8">
+    <div class="border-b border-vercel-border px-6 py-4">
+        <h3 class="text-base font-semibold text-white">Add User Override</h3>
+        <p class="mt-1 text-sm text-vercel-text-muted">Create a custom response or system prompt for a specific user.
+        </p>
+    </div>
+    <div class="px-6 py-6 space-y-6">
+        <!-- User ID -->
+        <div>
+            <label for="discord_user_id" class="block text-sm font-medium text-white mb-2">Discord User ID</label>
+            <input type="text" id="discord_user_id" name="discord_user_id" placeholder="e.g., 123456789012345678"
+                class="block w-full rounded-lg bg-vercel-surface border border-vercel-border py-2.5 px-4 text-white placeholder:text-vercel-text-muted focus:border-vercel-blue focus:ring-1 focus:ring-vercel-blue sm:text-sm font-mono">
+        </div>
+
+        <!-- Override Type -->
+        <div>
+            <label for="override_type" class="block text-sm font-medium text-white mb-2">Override Type</label>
+            <select id="override_type" name="override_type" onchange="toggleOverrideFields()"
+                class="block w-full rounded-lg bg-vercel-surface border border-vercel-border py-2.5 px-4 text-white focus:border-vercel-blue focus:ring-1 focus:ring-vercel-blue sm:text-sm">
+                <option value="custom_response">Custom Response (Static reply instead of AI)</option>
+                <option value="custom_prompt">Custom System Prompt (Different AI behavior)</option>
+            </select>
+        </div>
+
+        <!-- Custom Response Field -->
+        <div id="custom_response_field">
+            <label for="custom_response" class="block text-sm font-medium text-white mb-2">Custom Response</label>
+            <textarea id="custom_response" name="custom_response" rows="4"
+                placeholder="Enter the static response to send when this user asks a question..."
+                class="block w-full rounded-lg bg-vercel-surface border border-vercel-border py-2.5 px-4 text-white placeholder:text-vercel-text-muted focus:border-vercel-blue focus:ring-1 focus:ring-vercel-blue sm:text-sm"></textarea>
+            <p class="mt-2 text-sm text-vercel-text-muted">This message will be sent instead of calling the AI.</p>
+        </div>
+
+        <!-- Custom System Prompt Field -->
+        <div id="custom_prompt_field" class="hidden">
+            <label for="custom_system_prompt" class="block text-sm font-medium text-white mb-2">Custom System
+                Prompt</label>
+            <textarea id="custom_system_prompt" name="custom_system_prompt" rows="4"
+                placeholder="Enter the custom system prompt for this user..."
+                class="block w-full rounded-lg bg-vercel-surface border border-vercel-border py-2.5 px-4 text-white placeholder:text-vercel-text-muted focus:border-vercel-blue focus:ring-1 focus:ring-vercel-blue sm:text-sm"></textarea>
+            <p class="mt-2 text-sm text-vercel-text-muted">The AI will use this system prompt instead of the default
+                when responding to this user.</p>
+        </div>
+    </div>
+    <div class="flex items-center justify-end gap-x-4 border-t border-vercel-border px-6 py-4 bg-white/[0.02]">
+        <button type="button" onclick="addOverride()"
+            class="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-black hover:bg-white/90 transition-all hover:shadow-glow-sm">
+            Add Override
+        </button>
+    </div>
+</div>
+
+<!-- Status Message -->
+<div id="statusMessage" class="hidden mb-4 rounded-lg border p-4"></div>
+
+<!-- Existing Overrides List -->
+<div class="rounded-xl bg-vercel-card border border-vercel-border overflow-hidden">
+    <div class="border-b border-vercel-border px-6 py-4">
+        <h3 class="text-base font-semibold text-white">Existing Overrides</h3>
+        <p class="mt-1 text-sm text-vercel-text-muted">Manage user-specific overrides.</p>
+    </div>
+    <div class="divide-y divide-vercel-border" id="overridesList">
+        {% if overrides %}
+        {% for override in overrides %}
+        <div class="px-6 py-4" id="override-{{ override.id }}">
+            <div class="flex items-center justify-between">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-3">
+                        <span class="font-mono text-sm text-white">{{ override.discord_user_id }}</span>
+                        <span
+                            class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium {% if override.override_type == 'custom_response' %}bg-purple-500/10 text-purple-400 ring-1 ring-inset ring-purple-500/20{% else %}bg-blue-500/10 text-blue-400 ring-1 ring-inset ring-blue-500/20{% endif %}">
+                            {{ override.override_type | replace('_', ' ') | title }}
+                        </span>
+                        <span
+                            class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium {% if override.enabled %}bg-green-500/10 text-green-400 ring-1 ring-inset ring-green-500/20{% else %}bg-red-500/10 text-red-400 ring-1 ring-inset ring-red-500/20{% endif %}">
+                            {% if override.enabled %}Enabled{% else %}Disabled{% endif %}
+                        </span>
+                    </div>
+                    <p class="mt-2 text-sm text-vercel-text-muted truncate">
+                        {% if override.override_type == 'custom_response' %}
+                        {{ (override.custom_response or '')[:100] }}{% if (override.custom_response or '')|length > 100
+                        %}...{% endif %}
+                        {% else %}
+                        {{ (override.custom_system_prompt or '')[:100] }}{% if (override.custom_system_prompt or
+                        '')|length > 100 %}...{% endif %}
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="flex items-center gap-2 ml-4">
+                    <button type="button"
+                        onclick="toggleOverride({{ override.id }}, {{ 'true' if not override.enabled else 'false' }})"
+                        class="rounded-lg px-3 py-1.5 text-xs font-medium {% if override.enabled %}bg-yellow-500/10 text-yellow-400 hover:bg-yellow-500/20{% else %}bg-green-500/10 text-green-400 hover:bg-green-500/20{% endif %} transition-all">
+                        {% if override.enabled %}Disable{% else %}Enable{% endif %}
+                    </button>
+                    <button type="button" onclick="deleteOverride({{ override.id }})"
+                        class="rounded-lg px-3 py-1.5 text-xs font-medium bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-all">
+                        Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <div class="px-6 py-8 text-center">
+            <p class="text-sm text-vercel-text-muted">No user overrides configured yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    function toggleOverrideFields() {
+        const type = document.getElementById('override_type').value;
+        const responseField = document.getElementById('custom_response_field');
+        const promptField = document.getElementById('custom_prompt_field');
+
+        if (type === 'custom_response') {
+            responseField.classList.remove('hidden');
+            promptField.classList.add('hidden');
+        } else {
+            responseField.classList.add('hidden');
+            promptField.classList.remove('hidden');
+        }
+    }
+
+    function showStatus(message, type) {
+        const statusDiv = document.getElementById('statusMessage');
+        statusDiv.classList.remove('hidden', 'border-green-500', 'bg-green-500/10', 'text-green-400', 'border-red-500', 'bg-red-500/10', 'text-red-400');
+
+        if (type === 'success') {
+            statusDiv.classList.add('border-green-500', 'bg-green-500/10', 'text-green-400');
+        } else {
+            statusDiv.classList.add('border-red-500', 'bg-red-500/10', 'text-red-400');
+        }
+
+        statusDiv.textContent = message;
+        statusDiv.classList.remove('hidden');
+
+        if (type === 'success') {
+            setTimeout(() => location.reload(), 1500);
+        }
+    }
+
+    async function addOverride() {
+        const userId = document.getElementById('discord_user_id').value.trim();
+        const overrideType = document.getElementById('override_type').value;
+        const customResponse = document.getElementById('custom_response').value.trim();
+        const customPrompt = document.getElementById('custom_system_prompt').value.trim();
+
+        if (!userId) {
+            showStatus('Please enter a Discord User ID.', 'error');
+            return;
+        }
+
+        const payload = {
+            discord_user_id: userId,
+            override_type: overrideType,
+            enabled: true
+        };
+
+        if (overrideType === 'custom_response') {
+            if (!customResponse) {
+                showStatus('Please enter a custom response.', 'error');
+                return;
+            }
+            payload.custom_response = customResponse;
+        } else {
+            if (!customPrompt) {
+                showStatus('Please enter a custom system prompt.', 'error');
+                return;
+            }
+            payload.custom_system_prompt = customPrompt;
+        }
+
+        try {
+            const res = await fetch(`/api/guilds/{{ guild_id }}/user-overrides`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                showStatus('Override added successfully!', 'success');
+            } else {
+                showStatus(`Error: ${data.detail || 'Failed to add override'}`, 'error');
+            }
+        } catch (e) {
+            showStatus(`Error: ${e.message}`, 'error');
+        }
+    }
+
+    async function toggleOverride(overrideId, enable) {
+        try {
+            const res = await fetch(`/api/guilds/{{ guild_id }}/user-overrides/${overrideId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ enabled: enable })
+            });
+
+            if (res.ok) {
+                showStatus(`Override ${enable ? 'enabled' : 'disabled'} successfully!`, 'success');
+            } else {
+                const data = await res.json();
+                showStatus(`Error: ${data.detail || 'Failed to update override'}`, 'error');
+            }
+        } catch (e) {
+            showStatus(`Error: ${e.message}`, 'error');
+        }
+    }
+
+    async function deleteOverride(overrideId) {
+        if (!confirm('Are you sure you want to delete this override?')) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/guilds/{{ guild_id }}/user-overrides/${overrideId}`, {
+                method: 'DELETE'
+            });
+
+            if (res.ok) {
+                showStatus('Override deleted successfully!', 'success');
+            } else {
+                const data = await res.json();
+                showStatus(`Error: ${data.detail || 'Failed to delete override'}`, 'error');
+            }
+        } catch (e) {
+            showStatus(`Error: ${e.message}`, 'error');
+        }
+    }
+</script>
+{% endblock %}

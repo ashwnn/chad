@@ -37,6 +37,20 @@ class GuildConfig:
     updated_at: Optional[str] = None
 
 
+@dataclass
+class UserOverride:
+    """Per-user AI response override configuration."""
+    id: Optional[int] = None
+    guild_id: str = ""
+    discord_user_id: str = ""
+    override_type: str = "custom_response"  # "custom_response" or "custom_prompt"
+    custom_response: Optional[str] = None  # Static response to return instead of AI
+    custom_system_prompt: Optional[str] = None  # Custom system prompt for this user
+    enabled: bool = True
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
 class Database:
     """Async SQLite helper covering schema and a few common queries."""
 
@@ -146,6 +160,21 @@ class Database:
             CREATE INDEX IF NOT EXISTS idx_message_log_guild_user_created ON message_log(guild_id, user_id, created_at);
             CREATE INDEX IF NOT EXISTS idx_message_log_status_created ON message_log(status, created_at);
             CREATE INDEX IF NOT EXISTS idx_message_log_guild_user_cmd_created ON message_log(guild_id, user_id, command_type, created_at);
+
+            CREATE TABLE IF NOT EXISTS user_override (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                guild_id TEXT NOT NULL,
+                discord_user_id TEXT NOT NULL,
+                override_type TEXT NOT NULL DEFAULT 'custom_response',
+                custom_response TEXT,
+                custom_system_prompt TEXT,
+                enabled INTEGER DEFAULT 1,
+                created_at TEXT DEFAULT (datetime('now')),
+                updated_at TEXT DEFAULT (datetime('now')),
+                UNIQUE(guild_id, discord_user_id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_user_override_guild ON user_override(guild_id);
+            CREATE INDEX IF NOT EXISTS idx_user_override_lookup ON user_override(guild_id, discord_user_id, enabled);
             """
         )
         await self._ensure_column("guild_config", "duplicate_window_seconds INTEGER DEFAULT 60")
@@ -565,8 +594,154 @@ class Database:
             await self.conn.execute("DELETE FROM user_daily_usage WHERE guild_id = ?", (guild_id,))
             await self.conn.execute("DELETE FROM guild_daily_usage WHERE guild_id = ?", (guild_id,))
             await self.conn.execute("DELETE FROM message_log WHERE guild_id = ?", (guild_id,))
+            await self.conn.execute("DELETE FROM user_override WHERE guild_id = ?", (guild_id,))
             await self.conn.commit()
         
         # Invalidate cache for deleted guild
         self._guild_config_cache.pop(guild_id, None)
 
+    # --- User Override CRUD ---
+
+    async def add_user_override(self, override: "UserOverride") -> "UserOverride":
+        """Create or update a user override. Returns the created/updated override."""
+        async with self._lock:
+            await self.conn.execute(
+                """
+                INSERT INTO user_override (guild_id, discord_user_id, override_type, custom_response, custom_system_prompt, enabled)
+                VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT(guild_id, discord_user_id) DO UPDATE SET
+                    override_type = excluded.override_type,
+                    custom_response = excluded.custom_response,
+                    custom_system_prompt = excluded.custom_system_prompt,
+                    enabled = excluded.enabled,
+                    updated_at = datetime('now');
+                """,
+                (
+                    override.guild_id,
+                    override.discord_user_id,
+                    override.override_type,
+                    override.custom_response,
+                    override.custom_system_prompt,
+                    1 if override.enabled else 0,
+                ),
+            )
+            await self.conn.commit()
+        return await self.get_user_override(override.guild_id, override.discord_user_id)
+
+    async def get_user_override(self, guild_id: str, discord_user_id: str) -> Optional["UserOverride"]:
+        """Get a user override by guild and user ID."""
+        async with self.conn.execute(
+            "SELECT * FROM user_override WHERE guild_id = ? AND discord_user_id = ?",
+            (guild_id, discord_user_id),
+        ) as cur:
+            row = await cur.fetchone()
+            if not row:
+                return None
+            return UserOverride(
+                id=row["id"],
+                guild_id=row["guild_id"],
+                discord_user_id=row["discord_user_id"],
+                override_type=row["override_type"],
+                custom_response=row["custom_response"],
+                custom_system_prompt=row["custom_system_prompt"],
+                enabled=bool(row["enabled"]),
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
+            )
+
+    async def get_enabled_user_override(self, guild_id: str, discord_user_id: str) -> Optional["UserOverride"]:
+        """Get an enabled user override for processing. Returns None if not found or disabled."""
+        async with self.conn.execute(
+            "SELECT * FROM user_override WHERE guild_id = ? AND discord_user_id = ? AND enabled = 1",
+            (guild_id, discord_user_id),
+        ) as cur:
+            row = await cur.fetchone()
+            if not row:
+                return None
+            return UserOverride(
+                id=row["id"],
+                guild_id=row["guild_id"],
+                discord_user_id=row["discord_user_id"],
+                override_type=row["override_type"],
+                custom_response=row["custom_response"],
+                custom_system_prompt=row["custom_system_prompt"],
+                enabled=bool(row["enabled"]),
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
+            )
+
+    async def list_user_overrides(self, guild_id: str) -> List["UserOverride"]:
+        """List all user overrides for a guild."""
+        async with self.conn.execute(
+            "SELECT * FROM user_override WHERE guild_id = ? ORDER BY discord_user_id",
+            (guild_id,),
+        ) as cur:
+            rows = await cur.fetchall()
+            return [
+                UserOverride(
+                    id=row["id"],
+                    guild_id=row["guild_id"],
+                    discord_user_id=row["discord_user_id"],
+                    override_type=row["override_type"],
+                    custom_response=row["custom_response"],
+                    custom_system_prompt=row["custom_system_prompt"],
+                    enabled=bool(row["enabled"]),
+                    created_at=row["created_at"],
+                    updated_at=row["updated_at"],
+                )
+                for row in rows
+            ]
+
+    async def update_user_override(self, override_id: int, **kwargs) -> Optional["UserOverride"]:
+        """Update a user override by ID. Returns None if not found."""
+        # Build dynamic update query
+        set_clauses = []
+        params = []
+        for key, value in kwargs.items():
+            if key in ("override_type", "custom_response", "custom_system_prompt", "enabled"):
+                set_clauses.append(f"{key} = ?")
+                if key == "enabled":
+                    params.append(1 if value else 0)
+                else:
+                    params.append(value)
+        
+        if not set_clauses:
+            return None
+        
+        set_clauses.append("updated_at = datetime('now')")
+        params.append(override_id)
+        
+        async with self._lock:
+            await self.conn.execute(
+                f"UPDATE user_override SET {', '.join(set_clauses)} WHERE id = ?",
+                params,
+            )
+            await self.conn.commit()
+        
+        # Fetch and return the updated override
+        async with self.conn.execute(
+            "SELECT * FROM user_override WHERE id = ?", (override_id,)
+        ) as cur:
+            row = await cur.fetchone()
+            if not row:
+                return None
+            return UserOverride(
+                id=row["id"],
+                guild_id=row["guild_id"],
+                discord_user_id=row["discord_user_id"],
+                override_type=row["override_type"],
+                custom_response=row["custom_response"],
+                custom_system_prompt=row["custom_system_prompt"],
+                enabled=bool(row["enabled"]),
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
+            )
+
+    async def delete_user_override(self, override_id: int) -> bool:
+        """Delete a user override by ID. Returns True if deleted."""
+        async with self._lock:
+            cursor = await self.conn.execute(
+                "DELETE FROM user_override WHERE id = ?", (override_id,)
+            )
+            await self.conn.commit()
+            return cursor.rowcount > 0

@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block title %}Send Message - Chad Bot{% endblock %}
+
+{% block content %}
+<div class="md:flex md:items-center md:justify-between mb-8">
+    <div class="min-w-0 flex-1">
+        <h2 class="text-2xl font-bold leading-7 text-white sm:truncate sm:text-3xl sm:tracking-tight">Send Message</h2>
+        <p class="mt-2 text-sm text-vercel-text-secondary">Send a custom message to any channel in this guild.</p>
+    </div>
+</div>
+
+<div class="rounded-xl bg-vercel-card border border-vercel-border overflow-hidden">
+    <div class="border-b border-vercel-border px-6 py-4">
+        <h3 class="text-base font-semibold text-white">Compose Message</h3>
+        <p class="mt-1 text-sm text-vercel-text-muted">Select a channel and compose your message. You can optionally
+            mention a user.</p>
+    </div>
+    <div class="px-6 py-6 space-y-6">
+        <!-- Channel Selector -->
+        <div>
+            <label for="channel_id" class="block text-sm font-medium text-white mb-2">Channel</label>
+            <select id="channel_id" name="channel_id"
+                class="block w-full rounded-lg bg-vercel-surface border border-vercel-border py-2.5 px-4 text-white focus:border-vercel-blue focus:ring-1 focus:ring-vercel-blue sm:text-sm">
+                <option value="">Select a channel...</option>
+                {% for channel in channels %}
+                <option value="{{ channel.id }}"># {{ channel.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Optional User Mention -->
+        <div>
+            <label for="mention_user_id" class="block text-sm font-medium text-white mb-2">Mention User
+                (optional)</label>
+            <input type="text" id="mention_user_id" name="mention_user_id"
+                placeholder="Discord User ID (e.g., 123456789012345678)"
+                class="block w-full rounded-lg bg-vercel-surface border border-vercel-border py-2.5 px-4 text-white placeholder:text-vercel-text-muted focus:border-vercel-blue focus:ring-1 focus:ring-vercel-blue sm:text-sm font-mono">
+            <p class="mt-2 text-sm text-vercel-text-muted">Enter a Discord User ID to @mention them at the start of the
+                message.</p>
+        </div>
+
+        <!-- Message Content -->
+        <div>
+            <label for="content" class="block text-sm font-medium text-white mb-2">Message Content</label>
+            <textarea id="content" name="content" rows="6"
+                placeholder="Type your message here... You can use Discord markdown and mentions like @username, #channel, or role @mentions."
+                class="block w-full rounded-lg bg-vercel-surface border border-vercel-border py-2.5 px-4 text-white placeholder:text-vercel-text-muted focus:border-vercel-blue focus:ring-1 focus:ring-vercel-blue sm:text-sm"></textarea>
+            <p class="mt-2 text-sm text-vercel-text-muted">Supports Discord markdown: **bold**, *italic*, `code`, and
+                more.</p>
+        </div>
+    </div>
+    <div class="flex items-center justify-end gap-x-4 border-t border-vercel-border px-6 py-4 bg-white/[0.02]">
+        <button type="button" id="sendBtn" onclick="sendMessage()"
+            class="rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-black hover:bg-white/90 transition-all hover:shadow-glow-sm inline-flex items-center gap-2">
+            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+            </svg>
+            Send Message
+        </button>
+    </div>
+</div>
+
+<!-- Status Message -->
+<div id="statusMessage" class="hidden mt-4 rounded-lg border p-4"></div>
+
+<script>
+    async function sendMessage() {
+        const channelId = document.getElementById('channel_id').value;
+        const mentionUserId = document.getElementById('mention_user_id').value.trim();
+        const content = document.getElementById('content').value.trim();
+        const statusDiv = document.getElementById('statusMessage');
+        const sendBtn = document.getElementById('sendBtn');
+
+        // Validation
+        if (!channelId) {
+            showStatus('Please select a channel.', 'error');
+            return;
+        }
+        if (!content) {
+            showStatus('Please enter a message.', 'error');
+            return;
+        }
+
+        // Disable button
+        sendBtn.disabled = true;
+        sendBtn.innerHTML = `
+      <svg class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Sending...
+    `;
+
+        try {
+            const payload = {
+                channel_id: channelId,
+                content: content
+            };
+            if (mentionUserId) {
+                payload.mention_user_id = mentionUserId;
+            }
+
+            const res = await fetch(`/api/guilds/{{ guild_id }}/send-message`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                showStatus('Message sent successfully!', 'success');
+                // Clear the form
+                document.getElementById('content').value = '';
+                document.getElementById('mention_user_id').value = '';
+            } else {
+                showStatus(`Error: ${data.detail || 'Failed to send message'}`, 'error');
+            }
+        } catch (e) {
+            showStatus(`Error: ${e.message}`, 'error');
+        } finally {
+            // Re-enable button
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = `
+        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+        </svg>
+        Send Message
+      `;
+        }
+    }
+
+    function showStatus(message, type) {
+        const statusDiv = document.getElementById('statusMessage');
+        statusDiv.classList.remove('hidden', 'border-green-500', 'bg-green-500/10', 'text-green-400', 'border-red-500', 'bg-red-500/10', 'text-red-400');
+
+        if (type === 'success') {
+            statusDiv.classList.add('border-green-500', 'bg-green-500/10', 'text-green-400');
+        } else {
+            statusDiv.classList.add('border-red-500', 'bg-red-500/10', 'text-red-400');
+        }
+
+        statusDiv.textContent = message;
+        statusDiv.classList.remove('hidden');
+
+        // Auto-hide success messages after 5 seconds
+        if (type === 'success') {
+            setTimeout(() => {
+                statusDiv.classList.add('hidden');
+            }, 5000);
+        }
+    }
+</script>
+{% endblock %}

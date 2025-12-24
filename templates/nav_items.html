@@ -68,6 +68,31 @@
         Config
     </a>
 </li>
+<li>
+    <div class="text-xs font-medium leading-6 text-vercel-text-muted uppercase tracking-wider mt-6 mb-2">Actions</div>
+</li>
+<li>
+    <a href="/guilds/{{ guild_id }}/send-message"
+        class="{% if page == 'send_message' %}bg-white/10 text-white{% else %}text-vercel-text-secondary hover:text-white hover:bg-white/5{% endif %} group flex gap-x-3 rounded-lg p-2 text-sm leading-6 font-medium transition-all duration-200">
+        <svg class="h-6 w-6 shrink-0 {% if page == 'send_message' %}text-vercel-blue{% else %}text-vercel-text-muted group-hover:text-white{% endif %}"
+            fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+        </svg>
+        Send Message
+    </a>
+</li>
+<li>
+    <a href="/guilds/{{ guild_id }}/user-overrides"
+        class="{% if page == 'user_overrides' %}bg-white/10 text-white{% else %}text-vercel-text-secondary hover:text-white hover:bg-white/5{% endif %} group flex gap-x-3 rounded-lg p-2 text-sm leading-6 font-medium transition-all duration-200">
+        <svg class="h-6 w-6 shrink-0 {% if page == 'user_overrides' %}text-vercel-blue{% else %}text-vercel-text-muted group-hover:text-white{% endif %}"
+            fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z" />
+        </svg>
+        User Overrides
+    </a>
+</li>
 
 {% else %}
 <li>
