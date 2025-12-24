@@ -9,192 +9,131 @@
   </div>
 </div>
 
-<div class="md:flex md:items-center md:justify-between mb-8">
-  <div class="min-w-0 flex-1">
-    <h2
-      class="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-indigo-600">
-      Dashboard Overview
-    </h2>
-    <p class="mt-2 text-sm font-medium text-gray-500 flex items-center">
-      <span class="relative flex h-2 w-2 mr-2">
-        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-        <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-      </span>
-      Live guild statistics and bot health monitoring.
-    </p>
-  </div>
-</div>
-
 <!-- Stats Grid -->
-<dl class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-10">
-  <!-- Status Card -->
-  <div class="glass-panel relative overflow-hidden rounded-2xl p-6 transition-all hover:scale-[1.02] duration-300">
-    <div class="flex items-center">
-      <div
-        class="flex-shrink-0 bg-gradient-to-br from-green-400 to-emerald-600 p-3 rounded-xl shadow-lg shadow-green-200">
-        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+<dl class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+  <div class="relative overflow-hidden rounded-lg bg-white px-4 pt-5 pb-12 shadow sm:px-6 sm:pt-6">
+    <dt>
+      <div class="absolute rounded-md bg-brand-500 p-3">
+        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
         </svg>
       </div>
-      <div class="ml-4">
-        <dt class="text-sm font-medium text-gray-500 uppercase tracking-wider">Bot Status</dt>
-        <dd class="flex items-baseline">
-          <p class="text-xl font-bold text-gray-900">Active</p>
-        </dd>
+      <p class="ml-16 truncate text-sm font-medium text-gray-500">Pending Approvals</p>
+    </dt>
+    <dd class="ml-16 flex items-baseline pb-1 sm:pb-7">
+      <p class="text-2xl font-semibold text-gray-900">{{ pending | length }}</p>
+      <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
+        <div class="text-sm">
+          <a href="/guilds/{{ guild_id }}/queue" class="font-medium text-brand-600 hover:text-brand-500">View queue<span
+              class="sr-only"> pending approvals</span></a>
+        </div>
       </div>
-    </div>
-    <div class="mt-4">
-      <div class="text-xs text-gray-500 flex items-center">
-        {% if recent %}
-        <span class="mr-1">Last activity:</span>
-        <span class="font-semibold text-gray-700">{{ recent[0].created_at | truncate(16, True, '') }}</span>
-        {% else %}
-        No recent activity detected
-        {% endif %}
-      </div>
-    </div>
+    </dd>
   </div>
 
-  <!-- Pending Card -->
-  <div class="glass-panel relative overflow-hidden rounded-2xl p-6 transition-all hover:scale-[1.02] duration-300">
-    <div class="flex items-center">
-      <div
-        class="flex-shrink-0 bg-gradient-to-br from-amber-400 to-orange-600 p-3 rounded-xl shadow-lg shadow-orange-200">
-        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+  <div class="relative overflow-hidden rounded-lg bg-white px-4 pt-5 pb-12 shadow sm:px-6 sm:pt-6">
+    <dt>
+      <div class="absolute rounded-md bg-brand-500 p-3">
+        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </div>
-      <div class="ml-4">
-        <dt class="text-sm font-medium text-gray-500 uppercase tracking-wider">Pending</dt>
-        <dd class="flex items-baseline">
-          <p class="text-2xl font-bold text-gray-900">{{ pending | length }}</p>
-        </dd>
+      <p class="ml-16 truncate text-sm font-medium text-gray-500">Total Cost (Est.)</p>
+    </dt>
+    <dd class="ml-16 flex items-baseline pb-1 sm:pb-7">
+      <p class="text-2xl font-semibold text-gray-900">${{ "%.4f"|format(analytics.total_cost_usd) }}</p>
+      <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
+        <div class="text-sm">
+          <a href="/guilds/{{ guild_id }}/analytics" class="font-medium text-brand-600 hover:text-brand-500">View
+            analytics</a>
+        </div>
       </div>
-    </div>
-    <div class="mt-4">
-      <a href="/guilds/{{ guild_id }}/queue"
-        class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center">
-        VIEW QUEUE
-        <svg class="ml-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path d="M9 5l7 7-7 7" stroke-width="3" />
-        </svg>
-      </a>
-    </div>
+    </dd>
   </div>
 
-  <!-- Cost Card -->
-  <div class="glass-panel relative overflow-hidden rounded-2xl p-6 transition-all hover:scale-[1.02] duration-300">
-    <div class="flex items-center">
-      <div class="flex-shrink-0 bg-gradient-to-br from-blue-400 to-brand-600 p-3 rounded-xl shadow-lg shadow-blue-200">
-        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  <div class="relative overflow-hidden rounded-lg bg-white px-4 pt-5 pb-12 shadow sm:px-6 sm:pt-6">
+    <dt>
+      <div class="absolute rounded-md bg-brand-500 p-3">
+        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M2.25 18L9 11.25l4.306 4.307a11.95 11.95 0 015.814-5.519l2.74-1.22m0 0l-5.94-2.28m5.94 2.28l-2.28 5.941" />
         </svg>
       </div>
-      <div class="ml-4">
-        <dt class="text-sm font-medium text-gray-500 uppercase tracking-wider">Est. Cost</dt>
-        <dd class="flex items-baseline">
-          <p class="text-2xl font-bold text-gray-900">${{ "%.3f"|format(analytics.total_cost_usd) }}</p>
-        </dd>
+      <p class="ml-16 truncate text-sm font-medium text-gray-500">Total Tokens</p>
+    </dt>
+    <dd class="ml-16 flex items-baseline pb-1 sm:pb-7">
+      <p class="text-2xl font-semibold text-gray-900">{{ "{:,}".format(analytics.token_total) }}</p>
+      <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
+        <div class="text-sm">
+          <span class="text-gray-500">Lifetime usage</span>
+        </div>
       </div>
-    </div>
-    <div class="mt-4">
-      <a href="/guilds/{{ guild_id }}/analytics"
-        class="text-xs font-bold text-brand-600 hover:text-brand-700 flex items-center">
-        DETAILED ANALYTICS
-        <svg class="ml-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path d="M9 5l7 7-7 7" stroke-width="3" />
-        </svg>
-      </a>
-    </div>
+    </dd>
   </div>
 
-  <!-- Tokens Card -->
-  <div class="glass-panel relative overflow-hidden rounded-2xl p-6 transition-all hover:scale-[1.02] duration-300">
-    <div class="flex items-center">
-      <div
-        class="flex-shrink-0 bg-gradient-to-br from-indigo-400 to-purple-600 p-3 rounded-xl shadow-lg shadow-indigo-200">
-        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+  <div class="relative overflow-hidden rounded-lg bg-white px-4 pt-5 pb-12 shadow sm:px-6 sm:pt-6">
+    <dt>
+      <div class="absolute rounded-md bg-brand-500 p-3">
+        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </div>
-      <div class="ml-4">
-        <dt class="text-sm font-medium text-gray-500 uppercase tracking-wider">Daily Tokens</dt>
-        <dd class="flex items-baseline">
-          <p class="text-2xl font-bold text-gray-900">{{ "{:,}".format(usage.guild.chat_tokens_used) }}</p>
-        </dd>
+      <p class="ml-16 truncate text-sm font-medium text-gray-500">Daily Tokens</p>
+    </dt>
+    <dd class="ml-16 flex items-baseline pb-1 sm:pb-7">
+      <p class="text-2xl font-semibold text-gray-900">{{ "{:,}".format(usage.guild.chat_tokens_used) }}</p>
+      <div class="absolute inset-x-0 bottom-0 bg-gray-50 px-4 py-4 sm:px-6">
+        <div class="text-sm">
+          <span class="text-gray-500">Today's usage</span>
+        </div>
       </div>
-    </div>
-    <div class="mt-4">
-      <div class="w-full bg-gray-100 rounded-full h-1.5 mb-1">
-        {% set pct = (usage.guild.chat_tokens_used / config.global_daily_chat_token_limit * 100) if
-        config.global_daily_chat_token_limit > 0 else 0 %}
-        <div class="bg-indigo-600 h-1.5 rounded-full shadow-sm" style="width: {{ [pct, 100]|min }}%"></div>
-      </div>
-      <div class="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
-        <span>Daily Budget</span>
-        <span>{{ pct|round|int }}% Used</span>
-      </div>
-    </div>
+    </dd>
   </div>
 </dl>
 
-<div class="glass-panel overflow-hidden rounded-2xl shadow-sm border border-gray-100">
-  <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-white/50">
-    <h3 class="text-lg font-bold text-gray-900">Recent Activity</h3>
-    <a href="/guilds/{{ guild_id }}/history" class="text-sm font-semibold text-brand-600 hover:text-brand-700">View all
-      →</a>
+<div class="bg-white shadow sm:rounded-lg">
+  <div class="border-b border-gray-200 px-4 py-5 sm:px-6">
+    <h3 class="text-base font-semibold leading-6 text-gray-900">Recent Activity</h3>
   </div>
-  <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-gray-100">
-      <thead>
-        <tr class="bg-gray-50/50">
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Type</th>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">User</th>
-          <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tokens</th>
-          <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-gray-100">
-        {% for item in recent %}
-        <tr class="hover:bg-brand-50/30 transition-colors">
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span
-              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-white border border-gray-200 text-gray-700 shadow-sm">
-              {{ item.command_type|upper }}
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold
-              {% if item.status == 'approved_grok' or item.status == 'approved_manual' or item.status == 'auto_responded' %}
-                bg-green-100 text-green-800
+  <ul role="list" class="divide-y divide-gray-200">
+    {% for item in recent %}
+    <li class="px-4 py-4 sm:px-6 hover:bg-gray-50">
+      <div class="flex items-center justify-between gap-x-6">
+        <div class="min-w-0">
+          <div class="flex items-start gap-x-3">
+            <p class="text-sm font-semibold leading-6 text-gray-900">{{ item.command_type }}</p>
+            <p class="rounded-md whitespace-nowrap mt-0.5 px-1.5 py-0.5 text-xs font-medium ring-1 ring-inset
+              {% if item.status == 'approved_grok' or item.status == 'approved_manual' %}
+                bg-green-50 text-green-700 ring-green-600/20
               {% elif item.status == 'rejected' %}
-                bg-red-100 text-red-800
+                bg-red-50 text-red-700 ring-red-600/10
               {% elif item.status == 'pending_approval' %}
-                bg-amber-100 text-amber-800 animate-pulse-subtle
+                bg-yellow-50 text-yellow-800 ring-yellow-600/20
               {% else %}
-                bg-gray-100 text-gray-800
+                bg-gray-50 text-gray-600 ring-gray-500/10
               {% endif %}
             ">
-              {{ item.status|replace('_', ' ')|title }}
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-600">
-            {{ item.user_id }}
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-            {{ "{:,}".format(item.total_tokens or 0) }}
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-right text-xs font-medium text-gray-400">
-            {{ item.created_at | truncate(16, True, '') }}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+              {{ item.status }}
+            </p>
+          </div>
+          <div class="mt-1 flex items-center gap-x-2 text-xs leading-5 text-gray-500">
+            <p class="whitespace-nowrap">User {{ item.user_id }}</p>
+            <svg viewBox="0 0 2 2" class="h-0.5 w-0.5 fill-current">
+              <circle cx="1" cy="1" r="1" />
+            </svg>
+            <p class="truncate">{{ item.created_at | truncate(16, True, '') }}</p>
+          </div>
+        </div>
+        <div class="flex flex-none items-center gap-x-4">
+          <a href="/guilds/{{ guild_id }}/history"
+            class="hidden rounded-md bg-white px-2.5 py-1.5 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:block">View
+            history<span class="sr-only">, {{ item.id }}</span></a>
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
 </div>
 {% endblock %}

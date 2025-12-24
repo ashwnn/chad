@@ -5,128 +5,231 @@
 {% block content %}
 <div class="md:flex md:items-center md:justify-between mb-8">
   <div class="min-w-0 flex-1">
-    <h2
-      class="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-indigo-600">
-      Global Messages
-    </h2>
-    <p class="mt-2 text-sm font-medium text-gray-500">
-      Configure fallback messages, reply formatting, and default AI persona.
-    </p>
+    <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">Bot Messages &
+      Settings</h2>
+    <p class="mt-1 text-sm text-gray-500">Configure all bot messages, system prompt, and reply formatting.</p>
   </div>
 </div>
 
-<form id="messages-form" class="space-y-8">
-  <div class="grid grid-cols-1 gap-8 lg:grid-cols-3">
-    <div class="space-y-2">
-      <h3 class="text-lg font-bold text-gray-900">Reply Context</h3>
-      <p class="text-sm text-gray-500 leading-relaxed">
-        Add custom branding or disclaimers to every interaction.
-      </p>
+<form id="messages-form" class="space-y-10 divide-y divide-gray-900/10">
+
+  <div class="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3">
+    <div class="px-4 sm:px-0">
+      <h2 class="text-base font-semibold leading-7 text-gray-900">Bot Settings</h2>
+      <p class="mt-1 text-sm leading-6 text-gray-600">Global reply formatting options.</p>
     </div>
 
-    <div class="lg:col-span-2 space-y-6">
-      <div class="glass-panel rounded-2xl p-6 sm:p-8 grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <div>
-          <label for="reply_prefix" class="block text-sm font-bold text-gray-900 mb-2">Reply Prefix</label>
-          <input type="text" id="reply_prefix" placeholder="e.g. [Chad] "
-            class="block w-full rounded-xl border-gray-200 bg-white/50 py-3 px-4 text-gray-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm">
-        </div>
-        <div>
-          <label for="reply_suffix" class="block text-sm font-bold text-gray-900 mb-2">Reply Suffix</label>
-          <input type="text" id="reply_suffix" placeholder="e.g. - Sent via Chad"
-            class="block w-full rounded-xl border-gray-200 bg-white/50 py-3 px-4 text-gray-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm">
+    <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2">
+      <div class="px-4 py-6 sm:p-8">
+        <div class="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+          <div class="sm:col-span-3">
+            <label for="reply_prefix" class="block text-sm font-medium leading-6 text-gray-900">Reply Prefix
+              (optional)</label>
+            <div class="mt-2">
+              <input type="text" id="reply_prefix" placeholder="Text to add before every bot reply"
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+            </div>
+            <p class="mt-1 text-sm text-gray-500">Leave empty for no prefix</p>
+          </div>
+
+          <div class="sm:col-span-3">
+            <label for="reply_suffix" class="block text-sm font-medium leading-6 text-gray-900">Reply Suffix
+              (optional)</label>
+            <div class="mt-2">
+              <input type="text" id="reply_suffix" placeholder="Text to add after every bot reply"
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+            </div>
+            <p class="mt-1 text-sm text-gray-500">Leave empty for no suffix</p>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="border-t border-gray-100 pt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
-    <div class="space-y-2">
-      <h3 class="text-lg font-bold text-gray-900">Default AI Persona</h3>
-      <p class="text-sm text-gray-500 leading-relaxed">
-        The base instructions used when a guild doesn't have a custom prompt.
-      </p>
+  <div class="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3 pt-10">
+    <div class="px-4 sm:px-0">
+      <h2 class="text-base font-semibold leading-7 text-gray-900">Global System Prompt</h2>
+      <p class="mt-1 text-sm leading-6 text-gray-600">Global default for AI's personality and behavior.</p>
     </div>
 
-    <div class="lg:col-span-2">
-      <div class="glass-panel rounded-2xl p-6 sm:p-8">
-        <textarea id="system_prompt" rows="8" placeholder="Enter default AI instructions..."
-          class="block w-full rounded-xl border-gray-200 bg-white/50 py-3 px-4 text-gray-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 sm:text-sm"></textarea>
+    <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2">
+      <div class="px-4 py-6 sm:p-8">
+        <div class="col-span-full">
+          <div class="mt-2">
+            <textarea id="system_prompt" rows="8" placeholder="Enter the system prompt..."
+              class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6"></textarea>
+          </div>
+          <p class="mt-3 text-sm leading-6 text-gray-600">Be specific about tone, content restrictions, and desired
+            behavior. This is the fallback when guilds don't have a custom system prompt.</p>
+        </div>
       </div>
     </div>
   </div>
 
-  <div class="border-t border-gray-100 pt-8 grid grid-cols-1 gap-8 lg:grid-cols-3">
-    <div class="space-y-2">
-      <h3 class="text-lg font-bold text-gray-900">System Responses</h3>
-      <p class="text-sm text-gray-500 leading-relaxed">
-        Customize the literal strings used for various bot states.
-      </p>
+  <div class="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3 pt-10">
+    <div class="px-4 sm:px-0">
+      <h2 class="text-base font-semibold leading-7 text-gray-900">Error & Validation Messages</h2>
+      <p class="mt-1 text-sm leading-6 text-gray-600">Messages shown to users when validation fails.</p>
     </div>
 
-    <div class="lg:col-span-2 space-y-8">
-      <!-- Grouped Message Sections -->
-      <div class="glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
-        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">Validation
-          Errors</h4>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {% for key, label in [
-          ('empty_input', 'Empty Input'),
-          ('too_short', 'Too Short'),
-          ('trivial_input', 'Trivial Input'),
-          ('gibberish', 'Gibberish'),
-          ('too_long', 'Too Long'),
-          ('duplicate', 'Duplicate Request')
+    <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2">
+      <div class="px-4 py-6 sm:p-8">
+        <div class="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+
+          {% for key, label, placeholder, hint in [
+          ('msg_empty_input', 'Empty Input', 'Message for empty input', ''),
+          ('msg_too_short', 'Too Short', 'Message for too short input', ''),
+          ('msg_trivial_input', 'Trivial Input', 'Message for trivial input (hi, hello, test)', ''),
+          ('msg_gibberish', 'Gibberish', 'Message for gibberish input', ''),
+          ('msg_too_long', 'Too Long', 'Message for too long input', 'Use {max_chars} for character limit'),
+          ('msg_duplicate', 'Duplicate', 'Message for duplicate requests', '')
           ] %}
-          <div>
-            <label for="msg_{{ key }}" class="block text-xs font-bold text-gray-700 mb-2 uppercase">{{ label }}</label>
-            <input type="text" id="msg_{{ key }}"
-              class="block w-full rounded-xl border-gray-200 bg-white/50 py-2 px-3 text-gray-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
+          <div class="sm:col-span-3">
+            <label for="{{ key }}" class="block text-sm font-medium leading-6 text-gray-900">{{ label }}</label>
+            <div class="mt-2">
+              <input type="text" id="{{ key }}" placeholder="{{ placeholder }}"
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+            </div>
+            {% if hint %}
+            <p class="mt-1 text-sm text-gray-500">{{ hint }}</p>
+            {% endif %}
+          </div>
+          {% endfor %}
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3 pt-10">
+    <div class="px-4 sm:px-0">
+      <h2 class="text-base font-semibold leading-7 text-gray-900">Rate Limiting Messages</h2>
+      <p class="mt-1 text-sm leading-6 text-gray-600">Messages shown when users hit rate limits.</p>
+    </div>
+
+    <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2">
+      <div class="px-4 py-6 sm:p-8">
+        <div class="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+          <div class="sm:col-span-3">
+            <label for="msg_rate_limit_chat" class="block text-sm font-medium leading-6 text-gray-900">Chat Rate
+              Limit</label>
+            <div class="mt-2">
+              <input type="text" id="msg_rate_limit_chat" placeholder="Message when chat rate limit hit"
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3 pt-10">
+    <div class="px-4 sm:px-0">
+      <h2 class="text-base font-semibold leading-7 text-gray-900">Budget Messages</h2>
+      <p class="mt-1 text-sm leading-6 text-gray-600">Messages shown when budgets are exhausted.</p>
+    </div>
+
+    <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2">
+      <div class="px-4 py-6 sm:p-8">
+        <div class="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+          <div class="sm:col-span-3">
+            <label for="msg_chat_budget_user" class="block text-sm font-medium leading-6 text-gray-900">User Chat Budget
+              Exhausted</label>
+            <div class="mt-2">
+              <input type="text" id="msg_chat_budget_user" placeholder="Message when user chat budget exhausted"
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+            </div>
+          </div>
+          <div class="sm:col-span-3">
+            <label for="msg_chat_budget_guild" class="block text-sm font-medium leading-6 text-gray-900">Guild Chat
+              Budget Exhausted</label>
+            <div class="mt-2">
+              <input type="text" id="msg_chat_budget_guild" placeholder="Message when guild chat budget exhausted"
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3 pt-10">
+    <div class="px-4 sm:px-0">
+      <h2 class="text-base font-semibold leading-7 text-gray-900">Workflow Messages</h2>
+      <p class="mt-1 text-sm leading-6 text-gray-600">Messages for approval workflow states.</p>
+    </div>
+
+    <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2">
+      <div class="px-4 py-6 sm:p-8">
+        <div class="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+          {% for key, label, placeholder in [
+          ('msg_pending_approval_chat', 'Pending Approval', 'Message for pending chat approval'),
+          ('msg_manual_reply_default', 'Default Manual Reply', 'Default admin manual reply'),
+          ('msg_rejection_default', 'Default Rejection', 'Default rejection message')
+          ] %}
+          <div class="sm:col-span-3">
+            <label for="{{ key }}" class="block text-sm font-medium leading-6 text-gray-900">{{ label }}</label>
+            <div class="mt-2">
+              <input type="text" id="{{ key }}" placeholder="{{ placeholder }}"
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+            </div>
           </div>
           {% endfor %}
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
-        <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest border-b border-gray-100 pb-2">Quotas &
-          Safety</h4>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          {% for key, label in [
-          ('rate_limit_chat', 'Rate Limited'),
-          ('chat_budget_user', 'User Budget Full'),
-          ('chat_budget_guild', 'Guild Budget Full'),
-          ('pending_approval_chat', 'Pending Approval'),
-          ('rejection_default', 'Default Rejection'),
-          ('ai_error_chat', 'AI Service Error')
+  <div class="grid grid-cols-1 gap-x-8 gap-y-8 md:grid-cols-3 pt-10">
+    <div class="px-4 sm:px-0">
+      <h2 class="text-base font-semibold leading-7 text-gray-900">System Error Messages</h2>
+      <p class="mt-1 text-sm leading-6 text-gray-600">Messages for system-level errors.</p>
+    </div>
+
+    <div class="bg-white shadow-sm ring-1 ring-gray-900/5 sm:rounded-xl md:col-span-2">
+      <div class="px-4 py-6 sm:p-8">
+        <div class="grid max-w-2xl grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+          {% for key, label, placeholder in [
+          ('msg_ai_error_chat', 'AI Chat Service Error', 'Message when AI chat service fails'),
+          ('msg_dm_not_allowed', 'DM Not Allowed', 'Message when command used in DM'),
+          ('msg_invalid_input', 'Invalid Input', 'Generic invalid input message'),
+          ('msg_unknown_error', 'Unknown Error', 'Generic error message')
           ] %}
-          <div>
-            <label for="msg_{{ key }}" class="block text-xs font-bold text-gray-700 mb-2 uppercase">{{ label }}</label>
-            <input type="text" id="msg_{{ key }}"
-              class="block w-full rounded-xl border-gray-200 bg-white/50 py-2 px-3 text-gray-900 shadow-sm focus:border-brand-500 focus:ring-brand-500 text-sm">
+          <div class="sm:col-span-3">
+            <label for="{{ key }}" class="block text-sm font-medium leading-6 text-gray-900">{{ label }}</label>
+            <div class="mt-2">
+              <input type="text" id="{{ key }}" placeholder="{{ placeholder }}"
+                class="block w-full rounded-md border-0 py-2 px-3 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6">
+            </div>
           </div>
           {% endfor %}
         </div>
       </div>
+      <div class="flex items-center justify-end gap-x-6 border-t border-gray-900/10 px-4 py-4 sm:px-8">
+        <button type="button" onclick="loadMessages()"
+          class="text-sm font-semibold leading-6 text-gray-900">Reset</button>
+        <button type="submit"
+          class="rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">Save
+          All Changes</button>
+      </div>
     </div>
-  </div>
-
-  <div class="flex items-center justify-end gap-x-4 pt-10">
-    <button type="button" class="text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors"
-      onclick="loadMessages()">
-      Reset
-    </button>
-    <button type="submit"
-      class="rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 px-6 py-3 text-sm font-bold text-white shadow-lg hover:shadow-brand-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0">
-      Save All Changes
-    </button>
   </div>
 </form>
 
-<div id="notification"
-  class="fixed bottom-4 right-4 z-50 pointer-events-none transition-all duration-300 transform translate-y-20 opacity-0">
-  <div class="bg-white rounded-2xl border p-4 shadow-xl flex items-center gap-3">
-    <div id="notification-icon" class="w-8 h-8 rounded-full flex items-center justify-center"></div>
-    <p id="notification-text" class="text-sm font-bold text-gray-900"></p>
+<div id="notification" class="fixed bottom-4 right-4 z-50 hidden">
+  <div class="rounded-md p-4 shadow-lg">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+          <path fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z"
+            clip-rule="evenodd" />
+        </svg>
+      </div>
+      <div class="ml-3">
+        <p class="text-sm font-medium" id="notification-text"></p>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -139,25 +242,30 @@
       const data = await response.json();
       currentConfig = data;
 
+      // Bot settings
       document.getElementById('reply_prefix').value = data.bot_settings?.reply_prefix || '';
       document.getElementById('reply_suffix').value = data.bot_settings?.reply_suffix || '';
+
+      // System prompt
       document.getElementById('system_prompt').value = data.system_prompt || '';
 
+      // Messages
       const messages = data.messages || {};
       for (const [key, value] of Object.entries(messages)) {
         const input = document.getElementById('msg_' + key);
-        if (input) input.value = value;
+        if (input) {
+          input.value = value;
+        }
       }
-      showStatus('Settings loaded', 'success');
+
+      showStatus('Configuration loaded', 'success');
     } catch (error) {
-      showStatus('Load failed: ' + error.message, 'error');
+      showStatus('Error loading configuration: ' + error.message, 'error');
     }
   }
 
   async function saveMessages(e) {
     e.preventDefault();
-    const btn = e.target.querySelector('button[type="submit"]');
-    btn.disabled = true;
 
     const updates = {
       'bot_settings.reply_prefix': document.getElementById('reply_prefix').value,
@@ -165,6 +273,7 @@
       'system_prompt': document.getElementById('system_prompt').value,
     };
 
+    // Collect all messages
     const messageKeys = [
       'empty_input', 'too_short', 'trivial_input', 'gibberish', 'too_long', 'duplicate',
       'rate_limit_chat', 'chat_budget_user', 'chat_budget_guild',
@@ -174,7 +283,9 @@
 
     for (const key of messageKeys) {
       const input = document.getElementById('msg_' + key);
-      if (input) updates['messages.' + key] = input.value;
+      if (input) {
+        updates['messages.' + key] = input.value;
+      }
     }
 
     try {
@@ -183,34 +294,46 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ updates })
       });
-      if (!response.ok) throw new Error('Save failed');
-      showStatus('Global settings saved!', 'success');
+
+      if (!response.ok) {
+        throw new Error('Failed to save configuration');
+      }
+
+      const result = await response.json();
+      showStatus('Configuration saved successfully!', 'success');
+      currentConfig = result.config;
     } catch (error) {
-      showStatus(error.message, 'error');
-    } finally {
-      btn.disabled = false;
+      showStatus('Error saving configuration: ' + error.message, 'error');
     }
   }
 
   function showStatus(message, type) {
-    const el = document.getElementById('notification');
+    const notification = document.getElementById('notification');
     const text = document.getElementById('notification-text');
-    const icon = document.getElementById('notification-icon');
+    const icon = notification.querySelector('svg');
 
     text.textContent = message;
+    notification.classList.remove('hidden');
+
     if (type === 'success') {
-      icon.className = 'w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-600';
-      icon.innerHTML = '<svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path d="M5 13l4 4L19 7" stroke-width="3" /></svg>';
+      notification.className = 'fixed bottom-4 right-4 z-50 rounded-md bg-green-50 p-4 shadow-lg ring-1 ring-green-600/20';
+      text.className = 'text-sm font-medium text-green-800';
+      icon.className = 'h-5 w-5 text-green-400';
     } else {
-      icon.className = 'w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600';
-      icon.innerHTML = '<span>!</span>';
+      notification.className = 'fixed bottom-4 right-4 z-50 rounded-md bg-red-50 p-4 shadow-lg ring-1 ring-red-600/20';
+      text.className = 'text-sm font-medium text-red-800';
+      icon.className = 'h-5 w-5 text-red-400';
     }
 
-    el.classList.remove('opacity-0', 'translate-y-20');
-    setTimeout(() => el.classList.add('opacity-0', 'translate-y-20'), 3000);
+    setTimeout(() => {
+      notification.classList.add('hidden');
+    }, 5000);
   }
 
+  // Attach event listener
   document.getElementById('messages-form').addEventListener('submit', saveMessages);
+
+  // Load messages on page load
   document.addEventListener('DOMContentLoaded', loadMessages);
 </script>
 {% endblock %}
