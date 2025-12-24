@@ -385,6 +385,6 @@ class RequestProcessor:
             await self.db.increment_daily_chat_usage(guild_id, user_id, total_tokens)
 
         # Format the response with search indicator
-        formatted_reply = f"🔍 **Search Result:**\n\n{search_result.content}"
+        formatted_reply = f"{search_result.content}"
         return ProcessResult(reply=formatted_reply, log_id=log_id, status="auto_responded")
 
