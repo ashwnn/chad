@@ -17,6 +17,7 @@ class YAMLConfig:
     def __init__(self, config_path: str = "config/config.yaml"):
         self.config_path = Path(config_path)
         self._config: Dict[str, Any] = {}
+        self._last_mtime: float = 0
         self.load()
     
     def load(self) -> None:
@@ -30,22 +31,39 @@ class YAMLConfig:
         try:
             with open(self.config_path, 'r', encoding='utf-8') as f:
                 self._config = yaml.safe_load(f) or {}
-            logger.info(f"Loaded config from {self.config_path}")
+            self._last_mtime = self.config_path.stat().st_mtime
+            logger.info(f"Loaded config from {self.config_path} (mtime: {self._last_mtime})")
         except Exception as e:
             logger.error(f"Error loading config file: {e}")
             self._config = self._get_defaults()
+            self._last_mtime = 0
     
     def save(self) -> None:
         """Save current configuration to YAML file."""
         try:
             with open(self.config_path, 'w', encoding='utf-8') as f:
                 yaml.safe_dump(self._config, f, default_flow_style=False, allow_unicode=True)
-            logger.info(f"Saved config to {self.config_path}")
+            self._last_mtime = self.config_path.stat().st_mtime
+            logger.info(f"Saved config to {self.config_path} (mtime: {self._last_mtime})")
         except Exception as e:
             logger.error(f"Error saving config file: {e}")
+
+    def _maybe_reload(self) -> None:
+        """Check if config file has changed on disk and reload if so."""
+        if not self.config_path.exists():
+            return
+        
+        try:
+            current_mtime = self.config_path.stat().st_mtime
+            if current_mtime > self._last_mtime:
+                logger.info(f"Config file {self.config_path} changed on disk, reloading...")
+                self.load()
+        except Exception as e:
+            logger.error(f"Error checking config file mtime: {e}")
     
     def get(self, key: str, default: Any = None) -> Any:
         """Get a configuration value by dot-notation key (e.g., 'messages.empty_input')."""
+        self._maybe_reload()
         keys = key.split('.')
         value = self._config
         for k in keys:
@@ -75,6 +93,7 @@ class YAMLConfig:
     
     def get_all(self) -> Dict[str, Any]:
         """Get the entire configuration dictionary."""
+        self._maybe_reload()
         return self._config.copy()
     
     def _get_defaults(self) -> Dict[str, Any]:
