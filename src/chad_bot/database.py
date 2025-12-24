@@ -35,11 +35,6 @@ class GuildConfig:
     admin_user_ids: str = ""
     created_at: Optional[str] = None
     updated_at: Optional[str] = None
-    # Deprecated fields (kept for database compatibility, not used)
-    image_window_seconds: int = 300
-    image_max_per_window: int = 3
-    user_daily_image_limit: int = 5
-    global_daily_image_limit: int = 50
 
 
 class Database:
@@ -82,15 +77,9 @@ class Database:
                 admin_bypass_auto_approve INTEGER DEFAULT 1,
                 ask_window_seconds INTEGER DEFAULT 60,
                 ask_max_per_window INTEGER DEFAULT 5,
-                -- DEPRECATED: Image generation removed, kept for backward compatibility
-                image_window_seconds INTEGER DEFAULT 300,
-                image_max_per_window INTEGER DEFAULT 3,
                 duplicate_window_seconds INTEGER DEFAULT 60,
                 user_daily_chat_token_limit INTEGER DEFAULT 20000,
                 global_daily_chat_token_limit INTEGER DEFAULT 200000,
-                -- DEPRECATED: Image generation removed, kept for backward compatibility
-                user_daily_image_limit INTEGER DEFAULT 5,
-                global_daily_image_limit INTEGER DEFAULT 50,
                 system_prompt TEXT NOT NULL,
                 temperature REAL DEFAULT 0.5,
                 max_completion_tokens INTEGER DEFAULT 1024,
@@ -114,8 +103,6 @@ class Database:
                 user_id TEXT NOT NULL,
                 day TEXT NOT NULL,
                 chat_tokens_used INTEGER DEFAULT 0,
-                -- DEPRECATED: Image generation removed, kept for backward compatibility
-                images_generated INTEGER DEFAULT 0,
                 last_updated TEXT DEFAULT (datetime('now')),
                 PRIMARY KEY (guild_id, user_id, day)
             );
@@ -124,8 +111,6 @@ class Database:
                 guild_id TEXT NOT NULL,
                 day TEXT NOT NULL,
                 chat_tokens_used INTEGER DEFAULT 0,
-                -- DEPRECATED: Image generation removed, kept for backward compatibility
-                images_generated INTEGER DEFAULT 0,
                 last_updated TEXT DEFAULT (datetime('now')),
                 PRIMARY KEY (guild_id, day)
             );
@@ -140,8 +125,6 @@ class Database:
                 user_content TEXT NOT NULL,
                 grok_request_payload TEXT,
                 grok_response_content TEXT,
-                -- DEPRECATED: Image generation removed, kept for backward compatibility
-                grok_image_urls TEXT,
                 prompt_tokens INTEGER,
                 completion_tokens INTEGER,
                 total_tokens INTEGER,
@@ -184,18 +167,14 @@ class Database:
                 """
                 INSERT INTO guild_config (
                     guild_id, auto_approve_enabled, admin_bypass_auto_approve,
-                    ask_window_seconds, ask_max_per_window,
-                    image_window_seconds, image_max_per_window, duplicate_window_seconds,
+                    ask_window_seconds, ask_max_per_window, duplicate_window_seconds,
                     user_daily_chat_token_limit, global_daily_chat_token_limit,
-                    user_daily_image_limit, global_daily_image_limit,
                     system_prompt, temperature, max_completion_tokens, max_prompt_chars,
                     admin_user_ids, created_at, updated_at
                 ) VALUES (
                     :guild_id, :auto_approve_enabled, :admin_bypass_auto_approve,
-                    :ask_window_seconds, :ask_max_per_window,
-                    :image_window_seconds, :image_max_per_window, :duplicate_window_seconds,
+                    :ask_window_seconds, :ask_max_per_window, :duplicate_window_seconds,
                     :user_daily_chat_token_limit, :global_daily_chat_token_limit,
-                    :user_daily_image_limit, :global_daily_image_limit,
                     :system_prompt, :temperature, :max_completion_tokens, :max_prompt_chars,
                     :admin_user_ids, COALESCE(:created_at, datetime('now')), datetime('now')
                 )
@@ -204,13 +183,9 @@ class Database:
                     admin_bypass_auto_approve=excluded.admin_bypass_auto_approve,
                     ask_window_seconds=excluded.ask_window_seconds,
                     ask_max_per_window=excluded.ask_max_per_window,
-                    image_window_seconds=excluded.image_window_seconds,
-                    image_max_per_window=excluded.image_max_per_window,
                     duplicate_window_seconds=excluded.duplicate_window_seconds,
                     user_daily_chat_token_limit=excluded.user_daily_chat_token_limit,
                     global_daily_chat_token_limit=excluded.global_daily_chat_token_limit,
-                    user_daily_image_limit=excluded.user_daily_image_limit,
-                    global_daily_image_limit=excluded.global_daily_image_limit,
                     system_prompt=excluded.system_prompt,
                     temperature=excluded.temperature,
                     max_completion_tokens=excluded.max_completion_tokens,
@@ -282,7 +257,6 @@ class Database:
         needs_approval: bool = False,
         grok_request_payload: Optional[Dict[str, Any]] = None,
         grok_response_content: Optional[str] = None,
-        grok_image_urls: Optional[List[str]] = None,
         prompt_tokens: Optional[int] = None,
         completion_tokens: Optional[int] = None,
         total_tokens: Optional[int] = None,
@@ -295,17 +269,16 @@ class Database:
         error_detail: Optional[str] = None,
     ) -> int:
         payload_json = json.dumps(grok_request_payload) if grok_request_payload else None
-        image_json = json.dumps(grok_image_urls) if grok_image_urls else None
         async with self._lock:
             cursor = await self.conn.execute(
                 """
                 INSERT INTO message_log (
                     guild_id, channel_id, user_id, discord_message_id, command_type,
-                    user_content, grok_request_payload, grok_response_content, grok_image_urls,
+                    user_content, grok_request_payload, grok_response_content,
                     prompt_tokens, completion_tokens, total_tokens, estimated_cost_usd,
                     needs_approval, status, decision, approved_by_admin_id, approved_at,
                     manual_reply_content, error_code, error_detail
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     guild_id,
@@ -316,7 +289,6 @@ class Database:
                     user_content,
                     payload_json,
                     grok_response_content,
-                    image_json,
                     prompt_tokens,
                     completion_tokens,
                     total_tokens,
@@ -341,7 +313,6 @@ class Database:
         status: str,
         decision: Optional[str] = None,
         grok_response_content: Optional[str] = None,
-        grok_image_urls: Optional[List[str]] = None,
         prompt_tokens: Optional[int] = None,
         completion_tokens: Optional[int] = None,
         total_tokens: Optional[int] = None,
@@ -351,7 +322,6 @@ class Database:
         error_code: Optional[str] = None,
         error_detail: Optional[str] = None,
     ) -> None:
-        image_json = json.dumps(grok_image_urls) if grok_image_urls else None
         async with self._lock:
             await self.conn.execute(
                 """
@@ -359,7 +329,6 @@ class Database:
                 SET status=?,
                     decision=?,
                     grok_response_content=?,
-                    grok_image_urls=COALESCE(?, grok_image_urls),
                     prompt_tokens=?,
                     completion_tokens=?,
                     total_tokens=?,
@@ -378,7 +347,6 @@ class Database:
                     status,
                     decision,
                     grok_response_content,
-                    image_json,
                     prompt_tokens,
                     completion_tokens,
                     total_tokens,
@@ -463,7 +431,7 @@ class Database:
             return [dict(r) for r in rows]
 
     async def analytics(self, guild_id: str) -> Dict[str, Any]:
-        data: Dict[str, Any] = {"status_counts": {}, "token_total": 0, "image_requests": 0, "total_cost_usd": 0.0}
+        data: Dict[str, Any] = {"status_counts": {}, "token_total": 0, "total_cost_usd": 0.0}
         async with self.conn.execute(
             """
             SELECT status, COUNT(*) as cnt FROM message_log
@@ -476,7 +444,6 @@ class Database:
         async with self.conn.execute(
             """
             SELECT SUM(total_tokens) as token_total,
-                   SUM(CASE WHEN command_type='image' THEN 1 ELSE 0 END) as image_requests,
                    SUM(COALESCE(estimated_cost_usd, 0)) as total_cost_usd
             FROM message_log
             WHERE guild_id=?;
@@ -486,7 +453,6 @@ class Database:
             row = await cur.fetchone()
             if row:
                 data["token_total"] = row["token_total"] or 0
-                data["image_requests"] = row["image_requests"] or 0
                 data["total_cost_usd"] = row["total_cost_usd"] or 0.0
         return data
 
@@ -533,29 +499,8 @@ class Database:
     async def increment_daily_image_usage(
         self, guild_id: str, user_id: str, count: int = 1
     ) -> None:
-        day = today_str()
-        async with self._lock:
-            await self.conn.execute(
-                """
-                INSERT INTO user_daily_usage (guild_id, user_id, day, images_generated)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(guild_id, user_id, day) DO UPDATE SET
-                    images_generated = images_generated + excluded.images_generated,
-                    last_updated = datetime('now');
-                """,
-                (guild_id, user_id, day, count),
-            )
-            await self.conn.execute(
-                """
-                INSERT INTO guild_daily_usage (guild_id, day, images_generated)
-                VALUES (?, ?, ?)
-                ON CONFLICT(guild_id, day) DO UPDATE SET
-                    images_generated = images_generated + excluded.images_generated,
-                    last_updated = datetime('now');
-                """,
-                (guild_id, day, count),
-            )
-            await self.conn.commit()
+        """Deprecated: Image generation removed."""
+        pass
 
     async def get_usage(self, guild_id: str, user_id: Optional[str] = None) -> Dict[str, Any]:
         day = today_str()
@@ -563,22 +508,22 @@ class Database:
         if user_id:
             async with self.conn.execute(
                 """
-                SELECT chat_tokens_used, images_generated
+                SELECT chat_tokens_used
                 FROM user_daily_usage
                 WHERE guild_id=? AND user_id=? AND day=?;
                 """,
                 (guild_id, user_id, day),
             ) as cur:
-                usage["user"] = dict(await cur.fetchone() or {"chat_tokens_used": 0, "images_generated": 0})
+                usage["user"] = dict(await cur.fetchone() or {"chat_tokens_used": 0})
         async with self.conn.execute(
             """
-            SELECT chat_tokens_used, images_generated
+            SELECT chat_tokens_used
             FROM guild_daily_usage
             WHERE guild_id=? AND day=?;
             """,
             (guild_id, day),
         ) as cur:
-            usage["guild"] = dict(await cur.fetchone() or {"chat_tokens_used": 0, "images_generated": 0})
+            usage["guild"] = dict(await cur.fetchone() or {"chat_tokens_used": 0})
         return usage
 
     async def count_recent(

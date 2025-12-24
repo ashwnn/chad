@@ -54,7 +54,6 @@ class DiscordApiClient:
         *,
         channel_id: str,
         content: str,
-        embed_url: Optional[str] = None,
         mention_user_id: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         if not self.token:
@@ -68,20 +67,6 @@ class DiscordApiClient:
             payload["content"] = f"<@{mention_user_id}> {content}"
         else:
             payload["content"] = content
-        
-        # Add embed if image URL provided
-        if embed_url:
-            payload["embeds"] = [
-                {
-                    "image": {
-                        "url": embed_url
-                    },
-                    "color": 2563755  # Discord blue hex #2563eb
-                }
-            ]
-            # Don't duplicate content in embed if already in message
-            if not mention_user_id:
-                payload["embeds"][0]["description"] = content
         
         client = await self._get_client()
         resp = await client.post(
@@ -123,57 +108,7 @@ class DiscordApiClient:
         except Exception as exc:  # noqa: BLE001
             logger.error("Error deleting message %s: %s", message_id, exc)
             return False
-    async def timeout_user(self, guild_id: str, user_id: str, duration_seconds: int) -> bool:
-        """Timeout a user in a guild."""
-        if not self.token:
-            logger.warning("Discord token missing, skipping timeout")
-            return False
-            
-        import datetime
-        
-        # Calculate timeout end time (ISO8601)
-        if duration_seconds > 0:
-            until = (datetime.datetime.utcnow() + datetime.timedelta(seconds=duration_seconds)).isoformat()
-        else:
-            until = None
-            
-        client = await self._get_client()
-        try:
-            resp = await client.patch(
-                f"/guilds/{guild_id}/members/{user_id}",
-                headers={"Authorization": f"Bot {self.token}"},
-                json={"communication_disabled_until": until}
-            )
-            if resp.status_code >= 400:
-                logger.error("Failed to timeout user %s: %s - %s", user_id, resp.status_code, resp.text)
-                return False
-            resp.raise_for_status()
-            return True
-        except Exception as exc:
-            logger.error("Error timing out user %s: %s", user_id, exc)
-            return False
 
-    async def modify_member(self, guild_id: str, user_id: str, nick: str) -> bool:
-        """Modify a guild member (e.g. change nickname)."""
-        if not self.token:
-            logger.warning("Discord token missing, skipping modify member")
-            return False
-            
-        client = await self._get_client()
-        try:
-            resp = await client.patch(
-                f"/guilds/{guild_id}/members/{user_id}",
-                headers={"Authorization": f"Bot {self.token}"},
-                json={"nick": nick}
-            )
-            if resp.status_code >= 400:
-                logger.error("Failed to modify member %s: %s - %s", user_id, resp.status_code, resp.text)
-                return False
-            resp.raise_for_status()
-            return True
-        except Exception as exc:
-            logger.error("Error modifying member %s: %s", user_id, exc)
-            return False
     async def get_guild_roles(self, guild_id: str) -> Optional[list]:
         """Fetch guild roles."""
         if not self.token:
@@ -337,23 +272,3 @@ class DiscordApiClient:
         permissions |= member_allow
         
         return permissions
-
-    async def check_fun_permissions(self, guild_id: str) -> bool:
-        """Check if bot has permissions for Fun features (Admin OR (Timeout AND Nickname))."""
-        permissions = await self.calculate_permissions(guild_id)
-        
-        # Permissions constants
-        ADMINISTRATOR = 1 << 3
-        MANAGE_NICKNAMES = 1 << 27
-        MODERATE_MEMBERS = 1 << 40
-        
-        if permissions == -1: # Administrator
-            return True
-            
-        if permissions & ADMINISTRATOR:
-            return True
-            
-        has_timeout = bool(permissions & MODERATE_MEMBERS)
-        has_nickname = bool(permissions & MANAGE_NICKNAMES)
-        
-        return has_timeout and has_nickname

@@ -13,7 +13,6 @@ from .yaml_config import YAMLConfig
 class ProcessResult:
     reply: str
     log_id: Optional[int]
-    image_url: Optional[str] = None
     status: str = "auto_responded"
     error: Optional[str] = None
 
