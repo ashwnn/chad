@@ -145,10 +145,17 @@ def create_bot(settings: Settings) -> ChadBot:
         api_base=settings.grok_api_base,
         chat_model=settings.grok_chat_model,
     )
-    gemini = GeminiClient(
-        api_key=settings.gemini_api_key,
-        model=settings.gemini_model,
-    ) if settings.has_gemini else None
+    from .gemini_client import HAS_GEMINI_SDK
+    gemini = None
+    if settings.has_gemini:
+        if HAS_GEMINI_SDK:
+            gemini = GeminiClient(
+                api_key=settings.gemini_api_key,
+                model=settings.gemini_model,
+            )
+        else:
+            logger.warning("GEMINI_API_KEY is set but 'google-genai' library is missing. /search will be disabled.")
+    
     yaml_config = YAMLConfig()
     processor = RequestProcessor(db=db, grok=grok, settings=settings, yaml_config=yaml_config, gemini=gemini)
     bot = ChadBot(settings=settings, db=db, processor=processor)

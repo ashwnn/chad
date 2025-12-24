@@ -1,9 +1,12 @@
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from google import genai
-from google.genai import types
-
+try:
+    from google import genai
+    from google.genai import types
+    HAS_GEMINI_SDK = True
+except (ImportError, ModuleNotFoundError):
+    HAS_GEMINI_SDK = False
 
 @dataclass
 class SearchResult:
@@ -19,10 +22,13 @@ class GeminiClient:
     def __init__(self, *, api_key: Optional[str], model: str = "gemini-2.5-flash-lite"):
         self.api_key = api_key
         self.model = model
-        self._client: Optional[genai.Client] = None
+        self._client: Optional[Any] = None
 
-    def _get_client(self) -> genai.Client:
+    def _get_client(self) -> Any:
         """Get or create the Gemini client."""
+        if not HAS_GEMINI_SDK:
+            raise ImportError("The 'google-genai' library is not installed. Please install it with 'pip install google-genai'.")
+        
         if self._client is None:
             if not self.api_key:
                 raise ValueError("Gemini API key is required")
