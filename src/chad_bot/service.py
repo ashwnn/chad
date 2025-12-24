@@ -197,5 +197,4 @@ class RequestProcessor:
         
         # Format reply with question prefix and prefix/suffix
         formatted_reply = self.yaml_config.format_reply(grok_result.content)
-        reply_with_question = f"**Question:** {content}\n\n{formatted_reply}"
-        return ProcessResult(reply=reply_with_question, log_id=log_id, status="auto_responded")
+        return ProcessResult(reply=formatted_reply, log_id=log_id, status="auto_responded")
