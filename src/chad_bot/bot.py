@@ -8,6 +8,7 @@ from discord.ext import commands
 
 from .config import Settings
 from .database import Database
+from .gemini_client import GeminiClient
 from .grok_client import GrokClient
 from .service import RequestProcessor
 from .yaml_config import YAMLConfig
@@ -39,6 +40,8 @@ class ChadBot(commands.Bot):
         """Close the bot and clean up resources."""
         # Close HTTP clients
         await self.processor.grok.close()
+        if self.processor.gemini:
+            self.processor.gemini.close()
         # Close database
         await self.db.close()
         # Call parent close
@@ -142,8 +145,12 @@ def create_bot(settings: Settings) -> ChadBot:
         api_base=settings.grok_api_base,
         chat_model=settings.grok_chat_model,
     )
+    gemini = GeminiClient(
+        api_key=settings.gemini_api_key,
+        model=settings.gemini_model,
+    ) if settings.has_gemini else None
     yaml_config = YAMLConfig()
-    processor = RequestProcessor(db=db, grok=grok, settings=settings, yaml_config=yaml_config)
+    processor = RequestProcessor(db=db, grok=grok, settings=settings, yaml_config=yaml_config, gemini=gemini)
     bot = ChadBot(settings=settings, db=db, processor=processor)
 
     @bot.tree.command(name="ask", description="Ask a question to the AI")
@@ -198,6 +205,40 @@ def create_bot(settings: Settings) -> ChadBot:
             )
         
         logger.info("Handled /ask from %s (admin: %s)", interaction.user.id, is_admin)
+
+    @bot.tree.command(name="search", description="Search for accurate information using Google")
+    @app_commands.describe(query="What do you want to search for?")
+    async def search_slash(interaction: discord.Interaction, query: str):
+        """Slash command for searching with Gemini + Google Search grounding."""
+        guild_id = str(interaction.guild.id) if interaction.guild else None
+        if not guild_id:
+            await interaction.response.send_message(yaml_config.get_message("dm_not_allowed"), ephemeral=True)
+            return
+        
+        # Defer response as search might take time
+        await interaction.response.defer()
+        
+        result = await processor.process_search(
+            guild_id=guild_id,
+            channel_id=str(interaction.channel.id) if interaction.channel else "",
+            user_id=str(interaction.user.id),
+            discord_message_id=str(interaction.id),
+            query=query,
+        )
+        
+        # Send the response and capture the actual message ID
+        response_message = await interaction.followup.send(result.reply)
+        
+        # Update the database with the actual Discord message ID for better tracking
+        if result.log_id and response_message:
+            await db.update_discord_message_id(result.log_id, str(response_message.id))
+            logger.info(
+                "Stored bot response message ID %s for log entry %s",
+                response_message.id,
+                result.log_id
+            )
+        
+        logger.info("Handled /search from %s", interaction.user.id)
 
     return bot
 

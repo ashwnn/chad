@@ -20,6 +20,8 @@ class Settings:
     grok_api_key: Optional[str] = os.getenv("GROK_API_KEY")
     grok_api_base: str = os.getenv("GROK_API_BASE", "https://api.x.ai/v1")
     grok_chat_model: str = os.getenv("GROK_CHAT_MODEL", "grok-beta")
+    gemini_api_key: Optional[str] = os.getenv("GEMINI_API_KEY")
+    gemini_model: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
     database_path: str = os.getenv("DATABASE_PATH", "chad.sqlite3")
     web_host: str = os.getenv("WEB_HOST", "0.0.0.0")
     web_port: int = int(os.getenv("WEB_PORT", "8000"))
@@ -32,3 +34,7 @@ class Settings:
     @property
     def has_discord(self) -> bool:
         return bool(self.discord_token)
+
+    @property
+    def has_gemini(self) -> bool:
+        return bool(self.gemini_api_key)

@@ -3,6 +3,7 @@ from typing import Optional
 
 from .config import Settings
 from .database import Database
+from .gemini_client import GeminiClient
 from .grok_client import GrokClient
 from .rate_limits import RateLimitResult, RateLimitRule, check_rate_limit
 from .spam import ValidationResult, validate_prompt
@@ -18,9 +19,17 @@ class ProcessResult:
 
 
 class RequestProcessor:
-    def __init__(self, db: Database, grok: GrokClient, settings: Settings, yaml_config: Optional[YAMLConfig] = None):
+    def __init__(
+        self,
+        db: Database,
+        grok: GrokClient,
+        settings: Settings,
+        yaml_config: Optional[YAMLConfig] = None,
+        gemini: Optional[GeminiClient] = None,
+    ):
         self.db = db
         self.grok = grok
+        self.gemini = gemini
         self.settings = settings
         self.yaml_config = yaml_config or YAMLConfig()
         # Model pricing is in USD per 1,000,000 tokens.
@@ -28,6 +37,9 @@ class RequestProcessor:
         # From the attached pricing, grok-3-mini appears to be $0.30 (input) and $0.50 (output) per M tokens.
         self.prompt_price_per_m_token = 0.30
         self.completion_price_per_m_token = 0.50
+        # Gemini Flash-Lite pricing (approximate)
+        self.gemini_prompt_price_per_m_token = 0.075
+        self.gemini_completion_price_per_m_token = 0.30
 
     async def _check_duplicate(self, guild_id: str, user_id: str, content: str, window_seconds: int) -> bool:
         async with self.db.conn.execute(
@@ -224,3 +236,155 @@ class RequestProcessor:
         # Format reply with question prefix and prefix/suffix
         formatted_reply = self.yaml_config.format_reply(grok_result.content)
         return ProcessResult(reply=formatted_reply, log_id=log_id, status="auto_responded")
+
+    async def process_search(
+        self,
+        *,
+        guild_id: str,
+        channel_id: str,
+        user_id: str,
+        discord_message_id: Optional[str],
+        query: str,
+    ) -> ProcessResult:
+        """
+        Process a /search command using Gemini with Google Search grounding.
+        Applies spam filtering to reduce token expenditure.
+        """
+        config = await self.db.get_guild_config(guild_id)
+        
+        # Apply spam filtering to reduce token usage
+        validation: ValidationResult = validate_prompt(
+            query, max_chars=config.max_prompt_chars, yaml_config=self.yaml_config
+        )
+        if not validation.ok:
+            log_id = await self.db.record_message(
+                guild_id=guild_id,
+                channel_id=channel_id,
+                user_id=user_id,
+                discord_message_id=discord_message_id,
+                command_type="search",
+                user_content=query,
+                status="auto_responded",
+                error_code=validation.reason,
+                error_detail=validation.reply,
+            )
+            reply = self.yaml_config.format_reply(
+                validation.reply or self.yaml_config.get_message("invalid_input")
+            )
+            return ProcessResult(reply=reply, log_id=log_id, status="auto_responded")
+
+        # Check for duplicate queries
+        duplicate = await self._check_duplicate(
+            guild_id, user_id, query, config.duplicate_window_seconds
+        )
+        if duplicate:
+            reply = self.yaml_config.format_reply(self.yaml_config.get_message("duplicate"))
+            log_id = await self.db.record_message(
+                guild_id=guild_id,
+                channel_id=channel_id,
+                user_id=user_id,
+                discord_message_id=discord_message_id,
+                command_type="search",
+                user_content=query,
+                status="auto_responded",
+                error_code="duplicate",
+                error_detail=reply,
+            )
+            return ProcessResult(reply=reply, log_id=log_id, status="auto_responded")
+
+        # Apply rate limiting (reuse ask rate limits for search)
+        rate_limit_rule = RateLimitRule(config.ask_window_seconds, config.ask_max_per_window)
+        rate_result: RateLimitResult = await check_rate_limit(
+            self.db,
+            guild_id=guild_id,
+            user_id=user_id,
+            command_type="search",
+            rule=rate_limit_rule,
+            yaml_config=self.yaml_config,
+        )
+        if not rate_result.allowed:
+            reply = self.yaml_config.format_reply(
+                rate_result.reply or self.yaml_config.get_message("rate_limit_chat")
+            )
+            log_id = await self.db.record_message(
+                guild_id=guild_id,
+                channel_id=channel_id,
+                user_id=user_id,
+                discord_message_id=discord_message_id,
+                command_type="search",
+                user_content=query,
+                status="auto_responded",
+                error_code="rate_limited",
+                error_detail=reply,
+            )
+            return ProcessResult(reply=reply, log_id=log_id)
+
+        # Check if Gemini client is available
+        if self.gemini is None:
+            reply = "🔍 Search is not available - Gemini API is not configured."
+            log_id = await self.db.record_message(
+                guild_id=guild_id,
+                channel_id=channel_id,
+                user_id=user_id,
+                discord_message_id=discord_message_id,
+                command_type="search",
+                user_content=query,
+                status="error",
+                error_code="gemini_not_configured",
+                error_detail=reply,
+            )
+            return ProcessResult(reply=reply, log_id=log_id, status="error")
+
+        # Perform the grounded search
+        try:
+            search_result = await self.gemini.search(query)
+        except Exception as exc:  # noqa: BLE001
+            reply = "🔍 Search failed - an error occurred while processing your request."
+            log_id = await self.db.record_message(
+                guild_id=guild_id,
+                channel_id=channel_id,
+                user_id=user_id,
+                discord_message_id=discord_message_id,
+                command_type="search",
+                user_content=query,
+                status="error",
+                error_code="gemini_error",
+                error_detail=str(exc),
+            )
+            return ProcessResult(reply=reply, log_id=log_id, status="error", error=str(exc))
+
+        # Calculate token usage and cost
+        usage = search_result.usage or {}
+        total_tokens = usage.get("total_tokens", 0) or 0
+        prompt_tokens = usage.get("prompt_tokens", 0) or 0
+        completion_tokens = usage.get("completion_tokens", 0) or 0
+        cost = (
+            (prompt_tokens / 1_000_000.0) * self.gemini_prompt_price_per_m_token
+            + (completion_tokens / 1_000_000.0) * self.gemini_completion_price_per_m_token
+        ) if (prompt_tokens or completion_tokens) else None
+
+        # Log the successful search
+        log_id = await self.db.record_message(
+            guild_id=guild_id,
+            channel_id=channel_id,
+            user_id=user_id,
+            discord_message_id=discord_message_id,
+            command_type="search",
+            user_content=query,
+            grok_request_payload={"model": self.gemini.model if self.gemini else "unknown"},
+            grok_response_content=search_result.content,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+            estimated_cost_usd=cost,
+            status="auto_responded",
+        )
+
+        # Track usage
+        if total_tokens:
+            await self.db.increment_daily_chat_usage(guild_id, user_id, total_tokens)
+
+        # Format the response with search indicator
+        formatted_reply = f"🔍 **Search Result:**\n\n{search_result.content}"
+        return ProcessResult(reply=formatted_reply, log_id=log_id, status="auto_responded")
+
