@@ -431,7 +431,7 @@ def create_app(settings: Settings) -> FastAPI:
         """Get bot settings (prefix/suffix) from YAML config."""
         return yaml_config.get("bot_settings", {})
 
-    async def _send_discord_message(channel_id: str, content: str, mention_id: Optional[str] = None, image_url: Optional[str] = None):
+    async def _send_discord_message(channel_id: str, content: str, mention_id: Optional[str] = None):
         """Send a message to Discord channel.
         
         Returns:
@@ -439,7 +439,7 @@ def create_app(settings: Settings) -> FastAPI:
             None if failed (with exception logged)
         """
         try:
-            result = await discord_api.send_message(channel_id=channel_id, content=content, mention_user_id=mention_id, embed_url=image_url)
+            result = await discord_api.send_message(channel_id=channel_id, content=content, mention_user_id=mention_id)
             logger.info("Successfully sent message to channel %s", channel_id)
             return result
         except Exception as exc:  # noqa: BLE001
