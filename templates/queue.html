@@ -4,172 +4,141 @@
 {% block content %}
 <div class="md:flex md:items-center md:justify-between mb-8">
   <div class="min-w-0 flex-1">
-    <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:truncate sm:text-3xl sm:tracking-tight">Approval Queue</h2>
-    <p class="mt-1 text-sm text-gray-500">Review and approve pending requests.</p>
-  </div>
-  <div class="mt-4 flex md:ml-4 md:mt-0">
-    <span
-      class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">
-      {{ pending | length }} Pending
-    </span>
+    <h2
+      class="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-indigo-600">
+      Approval Queue
+    </h2>
+    <p class="mt-2 text-sm font-medium text-gray-500">
+      Review and approve or reject pending requests from users.
+    </p>
   </div>
 </div>
 
-{% if pending | length == 0 %}
-<div class="text-center rounded-lg border-2 border-dashed border-gray-300 p-12">
-  <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-  <h3 class="mt-2 text-sm font-semibold text-gray-900">No pending approvals</h3>
-  <p class="mt-1 text-sm text-gray-500">You're all caught up!</p>
+{% if not pending %}
+<div class="glass-panel rounded-2xl p-12 text-center shadow-sm">
+  <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 mb-4 border border-gray-100">
+    <svg class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+        d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+    </svg>
+  </div>
+  <h3 class="text-lg font-bold text-gray-900">Queue is empty</h3>
+  <p class="mt-1 text-sm text-gray-500">No requests are currently waiting for approval.</p>
 </div>
 {% else %}
-<div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-  <table class="min-w-full divide-y divide-gray-300">
-    <thead class="bg-gray-50">
-      <tr>
-        <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Time</th>
-        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">User</th>
-        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Type</th>
-        <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Preview</th>
-        <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-          <span class="sr-only">Actions</span>
-        </th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-gray-200 bg-white">
-      {% for item in pending %}
-      <tr id="row-{{ item.id }}">
-        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500 sm:pl-6">{{ item.created_at | truncate(16,
-          True, '') }}</td>
-        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ item.user_id }}</td>
-        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-          {% if item.command_type == 'ask' %}
-          <span
-            class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">Chat</span>
-          {% else %}
-          <span
-            class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">{{
-            item.command_type }}</span>
-          {% endif %}
-        </td>
-        <td class="px-3 py-4 text-sm text-gray-500 max-w-xs truncate">{{ item.user_content[:80] }}</td>
-        <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
-          <button type="button" onclick="toggleDetails({{ item.id }})"
-            class="text-brand-600 hover:text-brand-900">Review</button>
-        </td>
-      </tr>
-      <tr id="details-{{ item.id }}" class="hidden bg-gray-50">
-        <td colspan="5" class="px-4 py-4 sm:px-6">
-          <div class="rounded-md bg-white p-4 shadow-sm ring-1 ring-gray-900/5">
-            <h4 class="text-sm font-medium text-gray-900">Full Request</h4>
-            <p class="mt-2 text-sm text-gray-600 whitespace-pre-wrap">{{ item.user_content }}</p>
-
-            <div class="mt-4 flex gap-3 justify-end">
-              <button onclick="approve({{ item.id }}, 'grok', this)"
-                class="inline-flex items-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 disabled:opacity-50 disabled:cursor-not-allowed">
-                Approve via Grok
-              </button>
-              <button onclick="manual({{ item.id }}, this)"
-                class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
-                Manual Reply
-              </button>
-              <button onclick="reject({{ item.id }}, this)"
-                class="inline-flex items-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 disabled:opacity-50 disabled:cursor-not-allowed">
-                Reject
-              </button>
-            </div>
+<div class="grid grid-cols-1 gap-6">
+  {% for item in pending %}
+  <div id="card-{{ item.id }}"
+    class="glass-panel overflow-hidden rounded-2xl flex flex-col md:flex-row transition-all hover:shadow-md border border-white/60">
+    <!-- User Info & Content -->
+    <div class="p-6 flex-1 min-w-0">
+      <div class="flex items-start gap-4">
+        <div class="flex-shrink-0">
+          <div
+            class="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-100 to-indigo-100 flex items-center justify-center border border-brand-200">
+            <span class="text-brand-700 font-bold text-lg">{{ item.user_id[:2]|upper }}</span>
           </div>
-        </td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+        </div>
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="text-sm font-bold text-gray-900">{{ item.user_id }}</span>
+            <span
+              class="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2 py-0.5 rounded-full bg-gray-100 border border-gray-200">{{
+              item.command_type }}</span>
+          </div>
+          <div class="text-sm text-gray-600 bg-white/40 rounded-xl p-4 border border-white/50 italic leading-relaxed">
+            "{{ item.user_content }}"
+          </div>
+          <p class="mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+            Requested {{ item.created_at | truncate(16, True, '') }}
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div
+      class="bg-gray-50/50 p-6 flex flex-col justify-center gap-3 border-t md:border-t-0 md:border-l border-gray-100 min-w-[240px]">
+      <button onclick="approveMessage({{ item.id }}, 'grok', this)"
+        class="w-full inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-brand-600 text-sm font-bold text-white shadow-sm hover:bg-brand-500 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50">
+        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path d="M5 13l4 4L19 7" stroke-width="3" />
+        </svg>
+        Approve with AI
+      </button>
+
+      <div class="grid grid-cols-2 gap-3">
+        <button onclick="approveMessage({{ item.id }}, 'manual', this)"
+          class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-white border border-gray-200 text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50">
+          Manual
+        </button>
+        <button onclick="approveMessage({{ item.id }}, 'reject', this)"
+          class="inline-flex items-center justify-center px-4 py-2 rounded-xl bg-white border border-red-100 text-xs font-bold text-red-600 hover:bg-red-50 transition-colors shadow-sm disabled:opacity-50">
+          Reject
+        </button>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
 </div>
 {% endif %}
 
 <script>
-  function toggleDetails(id) {
-    const detailsRow = document.getElementById(`details-${id}`);
-    if (detailsRow.classList.contains('hidden')) {
-      detailsRow.classList.remove('hidden');
-    } else {
-      detailsRow.classList.add('hidden');
-    }
-  }
-
-  async function approve(id, decision, btn) {
-    // Disable all buttons in this row to prevent double-submit
-    const container = btn.closest('.flex');
-    const buttons = container.querySelectorAll('button');
+  async function approveMessage(id, decision, btn) {
+    const card = document.getElementById(`card-${id}`);
+    const buttons = card.querySelectorAll('button');
     buttons.forEach(b => b.disabled = true);
 
-    const originalText = btn.innerText;
-    btn.innerText = 'Processing...';
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<svg class="animate-spin h-4 w-4 text-current" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>';
 
-    const body = { decision };
+    const payload = { decision: decision };
 
-    if (decision === "reject") {
-      const reason = prompt("Reason for rejection (optional):");
-      if (reason === null) { // Cancelled
+    if (decision === 'manual') {
+      const text = prompt("Enter manual reply text:");
+      if (!text) {
         buttons.forEach(b => b.disabled = false);
-        btn.innerText = originalText;
+        btn.innerHTML = originalText;
         return;
       }
-      body.reason = reason || undefined;
-    }
-
-    if (decision === "manual") {
-      const reply = prompt("Enter your manual reply:");
-      if (reply === null) { // Cancelled
+      payload.manual_reply_content = text;
+    } else if (decision === 'reject') {
+      const reason = prompt("Enter rejection reason (optional):");
+      if (reason === null) {
         buttons.forEach(b => b.disabled = false);
-        btn.innerText = originalText;
+        btn.innerHTML = originalText;
         return;
       }
-      body.manual_reply_content = reply || "";
-      if (!body.manual_reply_content) {
-        alert("Manual reply cannot be empty");
-        buttons.forEach(b => b.disabled = false);
-        btn.innerText = originalText;
-        return;
-      }
+      payload.reason = reason;
     }
 
     try {
       const res = await fetch(`/api/approvals/${id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
-        // Remove the row from the table smoothly
-        const row = document.getElementById(`row-${id}`);
-        const details = document.getElementById(`details-${id}`);
-        row.remove();
-        details.remove();
-
-        // Update count if possible, or just let it be until refresh
-        // Ideally we check if table is empty and show empty state, but reload is fine if empty
-        const remaining = document.querySelectorAll('tbody tr').length;
-        if (remaining === 0) {
-          location.reload();
-        }
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+          card.remove();
+          if (document.querySelectorAll('[id^="card-"]').length === 0) {
+            location.reload();
+          }
+        }, 300);
       } else {
-        const error = await res.json();
-        alert(`Error: ${error.detail || 'Failed to process approval'}`);
+        const err = await res.json();
+        alert('Error: ' + (err.detail || 'Unknown error'));
         buttons.forEach(b => b.disabled = false);
-        btn.innerText = originalText;
+        btn.innerHTML = originalText;
       }
-    } catch (err) {
-      alert(`Error: ${err.message}`);
+    } catch (e) {
+      alert('Network error: ' + e.message);
       buttons.forEach(b => b.disabled = false);
-      btn.innerText = originalText;
+      btn.innerHTML = originalText;
     }
   }
-
-  function reject(id, btn) { approve(id, "reject", btn); }
-  function manual(id, btn) { approve(id, "manual", btn); }
 </script>
 {% endblock %}

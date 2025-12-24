@@ -35,10 +35,43 @@
     }
   </script>
   <style>
+    :root {
+      --brand-primary: #0ea5e9;
+      --brand-secondary: #6366f1;
+      --glass-bg: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.3);
+    }
+
+    body {
+      background: radial-gradient(circle at top right, #f0f9ff 0%, #e0f2fe 30%, #f8fafc 100%);
+      background-attachment: fixed;
+    }
+
+    .glass-panel {
+      background: var(--glass-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--glass-border);
+      box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    }
+
+    .sidebar-glass {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-right: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .nav-item-active {
+      background: linear-gradient(135deg, var(--brand-primary) 0%, var(--brand-secondary) 100%);
+      color: white !important;
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+    }
+
     /* Custom scrollbar for Webkit */
     ::-webkit-scrollbar {
-      width: 8px;
-      height: 8px;
+      width: 6px;
+      height: 6px;
     }
 
     ::-webkit-scrollbar-track {
@@ -46,16 +79,32 @@
     }
 
     ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 4px;
+      background: rgba(0, 0, 0, 0.1);
+      border-radius: 10px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
+      background: rgba(0, 0, 0, 0.2);
     }
 
     [x-cloak] {
       display: none !important;
+    }
+
+    @keyframes pulse-subtle {
+
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.8;
+      }
+    }
+
+    .animate-pulse-subtle {
+      animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
   </style>
   <!-- Alpine.js for interactivity -->
@@ -95,8 +144,8 @@
 
   <!-- Desktop sidebar -->
   <div class="hidden lg:fixed lg:inset-y-0 lg:z-50 lg:flex lg:w-72 lg:flex-col">
-    <div class="flex grow flex-col gap-y-5 overflow-y-auto border-r border-gray-200 bg-white px-6 pb-4">
-      <div class="flex h-16 shrink-0 items-center">
+    <div class="flex grow flex-col gap-y-5 overflow-y-auto sidebar-glass px-6 pb-4">
+      <div class="flex h-16 shrink-0 items-center border-b border-gray-100 mb-2">
         <img class="h-8 w-auto" src="/static/chad.png" alt="Chad Bot">
         <span class="ml-3 text-lg font-bold text-gray-900">Chad Bot</span>
       </div>
@@ -117,7 +166,7 @@
 
   <div class="lg:pl-72">
     <div
-      class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+      class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 sidebar-glass px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
       <button type="button" class="-m-2.5 p-2.5 text-gray-700 lg:hidden" @click="sidebarOpen = true">
         <span class="sr-only">Open sidebar</span>
         <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"

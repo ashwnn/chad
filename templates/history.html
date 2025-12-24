@@ -2,175 +2,189 @@
 {% block title %}History - Chad Bot{% endblock %}
 
 {% block content %}
-<div class="sm:flex sm:items-center">
-  <div class="sm:flex-auto">
-    <h1 class="text-base font-semibold leading-6 text-gray-900">Request History</h1>
-    <p class="mt-2 text-sm text-gray-700">A list of all requests processed by the bot for this guild. Click on a row to
-      view details.</p>
-  </div>
-  <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
-    <!-- Export button could go here -->
+<div class="md:flex md:items-center md:justify-between mb-8">
+  <div class="min-w-0 flex-1">
+    <h2
+      class="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl bg-clip-text text-transparent bg-gradient-to-r from-brand-600 to-indigo-600">
+      Request History
+    </h2>
+    <p class="mt-2 text-sm font-medium text-gray-500">
+      Audit trail of all processed requests and bot interactions.
+    </p>
   </div>
 </div>
 
 <!-- Filters -->
-<div class="mt-8 bg-white p-4 shadow sm:rounded-lg">
-  <form class="grid grid-cols-1 gap-y-6 sm:grid-cols-3 sm:gap-x-4" method="GET">
-    <div>
-      <label for="status" class="block text-sm font-medium leading-6 text-gray-900">Status</label>
+<div class="glass-panel p-6 mb-8 border border-white/60">
+  <form class="grid grid-cols-1 gap-6 sm:grid-cols-4 items-end" method="GET">
+    <div class="sm:col-span-1">
+      <label for="status" class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Status</label>
       <select id="status" name="status"
-        class="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-brand-600 sm:text-sm sm:leading-6">
+        class="block w-full rounded-xl border-gray-200 bg-white/50 py-2.5 px-3 text-sm text-gray-900 focus:border-brand-500 focus:ring-brand-500">
         <option value="">All Statuses</option>
         <option value="pending_approval" {% if status_filter=='pending_approval' %}selected{% endif %}>Pending</option>
-        <option value="approved_grok" {% if status_filter=='approved_grok' %}selected{% endif %}>Approved (Grok)
-        </option>
+        <option value="approved_grok" {% if status_filter=='approved_grok' %}selected{% endif %}>Approved (AI)</option>
         <option value="approved_manual" {% if status_filter=='approved_manual' %}selected{% endif %}>Approved (Manual)
         </option>
         <option value="rejected" {% if status_filter=='rejected' %}selected{% endif %}>Rejected</option>
         <option value="error" {% if status_filter=='error' %}selected{% endif %}>Error</option>
       </select>
     </div>
-    <div>
-      <label for="command_type" class="block text-sm font-medium leading-6 text-gray-900">Type</label>
+    <div class="sm:col-span-1">
+      <label for="command_type"
+        class="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Type</label>
       <select id="command_type" name="command_type"
-        class="mt-2 block w-full rounded-md border-0 py-1.5 pl-3 pr-10 text-gray-900 ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-brand-600 sm:text-sm sm:leading-6">
+        class="block w-full rounded-xl border-gray-200 bg-white/50 py-2.5 px-3 text-sm text-gray-900 focus:border-brand-500 focus:ring-brand-500">
         <option value="">All Types</option>
         <option value="ask" {% if command_type_filter=='ask' %}selected{% endif %}>Chat</option>
         <option value="image" {% if command_type_filter=='image' %}selected{% endif %}>Image</option>
       </select>
     </div>
-    <div class="flex items-end">
+    <div class="sm:col-span-2 flex gap-3">
       <button type="submit"
-        class="rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">Filter</button>
+        class="flex-1 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-brand-500 transition-all active:scale-[0.98]">
+        Apply Filters
+      </button>
       <a href="/guilds/{{ guild_id }}/history"
-        class="ml-3 rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Clear</a>
+        class="inline-flex items-center justify-center px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors">
+        Reset
+      </a>
     </div>
   </form>
 </div>
 
-<div class="mt-8 flow-root">
-  <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-    <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
-      <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 sm:rounded-lg">
-        <table class="min-w-full divide-y divide-gray-300">
-          <thead class="bg-gray-50">
-            <tr>
-              <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-6">Time</th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">User</th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Type</th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Status</th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Content</th>
-              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">Cost</th>
-              <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                <span class="sr-only">Expand</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-gray-200 bg-white">
-            {% for item in history %}
-            <tr class="cursor-pointer hover:bg-gray-50" onclick="toggleHistoryDetails({{ item.id }})">
-              <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500 sm:pl-6">{{ item.created_at |
-                truncate(16, True, '') }}</td>
-              <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ item.user_id }}</td>
-              <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">{{ item.command_type }}</td>
-              <td class="whitespace-nowrap px-3 py-4 text-sm">
-                <span class="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium ring-1 ring-inset
-                  {% if item.status == 'approved_grok' or item.status == 'approved_manual' %}
-                    bg-green-50 text-green-700 ring-green-600/20
-                  {% elif item.status == 'rejected' %}
-                    bg-red-50 text-red-700 ring-red-600/10
-                  {% elif item.status == 'pending_approval' %}
-                    bg-yellow-50 text-yellow-800 ring-yellow-600/20
-                  {% else %}
-                    bg-gray-50 text-gray-600 ring-gray-500/10
+<div class="glass-panel overflow-hidden rounded-2xl border border-gray-100 shadow-sm">
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-100">
+      <thead>
+        <tr class="bg-gray-50/50">
+          <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Request</th>
+          <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+          <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Cost</th>
+          <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
+          <th class="px-6 py-4"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100 bg-white/30">
+        {% for item in history %}
+        <tr class="hover:bg-brand-50/30 transition-colors cursor-pointer group"
+          onclick="toggleHistoryDetails({{ item.id }})">
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-3">
+              <div
+                class="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 border border-gray-200">
+                {{ item.user_id[:2]|upper }}
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-bold text-gray-900 truncate max-w-[200px]">{{ item.user_content }}</p>
+                <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">{{ item.command_type }} &bull;
+                  {{ item.user_id }}</p>
+              </div>
+            </div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold border
+              {% if item.status == 'approved_grok' or item.status == 'approved_manual' or item.status == 'auto_responded' %}
+                bg-green-100 text-green-800 border-green-200
+              {% elif item.status == 'rejected' %}
+                bg-red-100 text-red-800 border-red-200
+              {% elif item.status == 'pending_approval' %}
+                bg-amber-100 text-amber-800 border-amber-200
+              {% else %}
+                bg-gray-100 text-gray-800 border-gray-200
+              {% endif %}
+            ">
+              {{ item.status|replace('_', ' ')|upper }}
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-600">
+            {% if item.estimated_cost_usd %}
+            ${{ "%.4f"|format(item.estimated_cost_usd) }}
+            {% else %}
+            <span class="text-gray-300">-</span>
+            {% endif %}
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-right text-xs font-medium text-gray-400">
+            {{ item.created_at | truncate(16, True, '') }}
+          </td>
+          <td class="px-6 py-4 text-right">
+            <svg id="icon-{{ item.id }}"
+              class="h-5 w-5 text-gray-400 transition-transform duration-200 group-hover:text-brand-500"
+              viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd"
+                d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                clip-rule="evenodd" />
+            </svg>
+          </td>
+        </tr>
+        <tr id="details-{{ item.id }}" class="hidden">
+          <td colspan="5" class="px-6 py-0 pb-6">
+            <div class="glass-panel p-6 rounded-2xl border border-brand-100 bg-brand-50/20 space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="space-y-4">
+                  <div>
+                    <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">User Request</h4>
+                    <div
+                      class="text-sm text-gray-700 bg-white/60 p-4 rounded-xl border border-white/80 leading-relaxed italic">
+                      "{{ item.user_content }}"
+                    </div>
+                  </div>
+
+                  {% if item.grok_response_content %}
+                  <div>
+                    <h4 class="text-[10px] font-bold text-brand-500 uppercase tracking-widest mb-2">AI Response</h4>
+                    <div
+                      class="text-sm text-gray-800 bg-white/80 p-4 rounded-xl border border-brand-100 leading-relaxed">
+                      {{ item.grok_response_content }}
+                    </div>
+                  </div>
                   {% endif %}
-                ">
-                  {{ item.status }}
-                </span>
-              </td>
-              <td class="px-3 py-4 text-sm text-gray-500 max-w-xs truncate">
-                {{ item.user_content[:50] }}{% if item.user_content|length > 50 %}...{% endif %}
-              </td>
-              <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                {% if item.estimated_cost_usd %}
-                ${{ "%.5f"|format(item.estimated_cost_usd) }}
-                {% else %}
-                -
-                {% endif %}
-              </td>
-              <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 text-right">
-                <svg id="icon-{{ item.id }}" class="h-5 w-5 text-gray-400 transform transition-transform duration-200"
-                  viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                  <path fill-rule="evenodd"
-                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                    clip-rule="evenodd" />
-                </svg>
-              </td>
-            </tr>
-            <tr id="details-{{ item.id }}" class="hidden bg-gray-50">
-              <td colspan="7" class="px-4 py-4 sm:px-6">
-                <div class="rounded-md bg-white p-4 shadow-sm ring-1 ring-gray-900/5">
-                  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <div class="col-span-2">
-                      <h4 class="text-sm font-medium text-gray-900">User Request</h4>
-                      <p class="mt-1 text-sm text-gray-600 whitespace-pre-wrap bg-gray-50 p-2 rounded">{{
-                        item.user_content }}</p>
-                    </div>
 
-                    {% if item.grok_response_content %}
-                    <div class="col-span-2">
-                      <h4 class="text-sm font-medium text-gray-900">AI Response</h4>
-                      <p class="mt-1 text-sm text-gray-600 whitespace-pre-wrap bg-gray-50 p-2 rounded">{{
-                        item.grok_response_content }}</p>
+                  {% if item.manual_reply_content %}
+                  <div>
+                    <h4 class="text-[10px] font-bold text-indigo-500 uppercase tracking-widest mb-2">Manual Reply</h4>
+                    <div
+                      class="text-sm text-gray-800 bg-white/80 p-4 rounded-xl border border-indigo-100 leading-relaxed">
+                      {{ item.manual_reply_content }}
                     </div>
-                    {% endif %}
+                  </div>
+                  {% endif %}
+                </div>
 
-                    {% if item.manual_reply_content %}
-                    <div class="col-span-2">
-                      <h4 class="text-sm font-medium text-gray-900">Manual Reply</h4>
-                      <p class="mt-1 text-sm text-gray-600 whitespace-pre-wrap bg-gray-50 p-2 rounded">{{
-                        item.manual_reply_content }}</p>
-                    </div>
-                    {% endif %}
-
-                    {% if item.error_detail %}
-                    <div class="col-span-2">
-                      <h4 class="text-sm font-medium text-red-700">Error Detail</h4>
-                      <p class="mt-1 text-sm text-red-600 whitespace-pre-wrap bg-red-50 p-2 rounded">{{
-                        item.error_detail }}</p>
-                    </div>
-                    {% endif %}
-
-                    <div>
-                      <h4 class="text-sm font-medium text-gray-900">Metadata</h4>
-                      <dl class="mt-2 divide-y divide-gray-200 border-t border-gray-200 text-sm leading-6">
-                        <div class="flex justify-between py-1">
-                          <dt class="text-gray-500">Total Tokens</dt>
-                          <dd class="text-gray-900">{{ item.total_tokens or 0 }}</dd>
-                        </div>
-                        <div class="flex justify-between py-1">
-                          <dt class="text-gray-500">Prompt Tokens</dt>
-                          <dd class="text-gray-900">{{ item.prompt_tokens or 0 }}</dd>
-                        </div>
-                        <div class="flex justify-between py-1">
-                          <dt class="text-gray-500">Completion Tokens</dt>
-                          <dd class="text-gray-900">{{ item.completion_tokens or 0 }}</dd>
-                        </div>
-                        <div class="flex justify-between py-1">
-                          <dt class="text-gray-500">Decision</dt>
-                          <dd class="text-gray-900">{{ item.decision or 'N/A' }}</dd>
-                        </div>
-                      </dl>
+                <div class="space-y-4">
+                  <div>
+                    <h4 class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Execution Metrics
+                    </h4>
+                    <div class="bg-white/40 rounded-xl border border-white/60 divide-y divide-white/60">
+                      <div class="flex justify-between p-3">
+                        <span class="text-xs text-gray-500">Total Tokens</span>
+                        <span class="text-xs font-bold text-gray-900">{{ item.total_tokens or 0 }}</span>
+                      </div>
+                      <div class="flex justify-between p-3">
+                        <span class="text-xs text-gray-500">Prompt / Completion</span>
+                        <span class="text-xs font-bold text-gray-900">{{ item.prompt_tokens or 0 }} / {{
+                          item.completion_tokens or 0 }}</span>
+                      </div>
+                      <div class="flex justify-between p-3">
+                        <span class="text-xs text-gray-500">Decision Mode</span>
+                        <span class="text-xs font-bold text-gray-900 uppercase">{{ item.decision or 'N/A' }}</span>
+                      </div>
+                      {% if item.error_detail %}
+                      <div class="p-3">
+                        <span class="text-xs text-red-500 font-bold block mb-1">Error Detail</span>
+                        <span class="text-xs text-red-600 font-medium">{{ item.error_detail }}</span>
+                      </div>
+                      {% endif %}
                     </div>
                   </div>
                 </div>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
+              </div>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
 </div>
 
@@ -178,13 +192,12 @@
   function toggleHistoryDetails(id) {
     const detailsRow = document.getElementById(`details-${id}`);
     const icon = document.getElementById(`icon-${id}`);
-
     if (detailsRow.classList.contains('hidden')) {
       detailsRow.classList.remove('hidden');
-      icon.classList.add('rotate-180');
+      icon.style.transform = 'rotate(180deg)';
     } else {
       detailsRow.classList.add('hidden');
-      icon.classList.remove('rotate-180');
+      icon.style.transform = 'rotate(0deg)';
     }
   }
 </script>
