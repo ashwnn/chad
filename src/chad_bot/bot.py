@@ -15,6 +15,51 @@ from .yaml_config import YAMLConfig
 
 logger = logging.getLogger(__name__)
 
+# Discord message character limit
+DISCORD_MAX_LENGTH = 2000
+
+
+def split_message(text: str, max_length: int = DISCORD_MAX_LENGTH) -> list[str]:
+    """Split a message into chunks that fit within Discord's character limit.
+    
+    Attempts to split at newlines first, then at word boundaries, preserving
+    readability as much as possible.
+    """
+    if len(text) <= max_length:
+        return [text]
+    
+    chunks = []
+    remaining = text
+    
+    while remaining:
+        if len(remaining) <= max_length:
+            chunks.append(remaining)
+            break
+        
+        # Find a good split point
+        split_point = max_length
+        
+        # Try to split at a double newline (paragraph break) first
+        para_break = remaining.rfind("\n\n", 0, max_length)
+        if para_break > max_length // 2:  # Only use if reasonably far into the chunk
+            split_point = para_break + 2  # Include the newlines in the first chunk
+        else:
+            # Try to split at a single newline
+            newline = remaining.rfind("\n", 0, max_length)
+            if newline > max_length // 2:
+                split_point = newline + 1
+            else:
+                # Try to split at a space
+                space = remaining.rfind(" ", 0, max_length)
+                if space > max_length // 2:
+                    split_point = space + 1
+                # Otherwise just hard split at max_length
+        
+        chunks.append(remaining[:split_point].rstrip())
+        remaining = remaining[split_point:].lstrip()
+    
+    return chunks
+
 
 class ChadBot(commands.Bot):
     def __init__(self, settings: Settings, db: Database, processor: RequestProcessor):
@@ -199,8 +244,15 @@ def create_bot(settings: Settings) -> ChadBot:
             is_admin=is_admin,
         )
         
-        # Send the response and capture the actual message ID
-        response_message = await interaction.followup.send(result.reply)
+        # Split long responses to fit Discord's character limit
+        chunks = split_message(result.reply)
+        
+        # Send the first chunk and capture the message ID
+        response_message = await interaction.followup.send(chunks[0])
+        
+        # Send remaining chunks as additional messages
+        for chunk in chunks[1:]:
+            await interaction.followup.send(chunk)
         
         # Update the database with the actual Discord message ID for better tracking
         if result.log_id and response_message:
@@ -211,7 +263,7 @@ def create_bot(settings: Settings) -> ChadBot:
                 result.log_id
             )
         
-        logger.info("Handled /ask from %s (admin: %s)", interaction.user.id, is_admin)
+        logger.info("Handled /ask from %s (admin: %s, chunks: %d)", interaction.user.id, is_admin, len(chunks))
 
     @bot.tree.command(name="googl", description="Search for accurate information using Google")
     @app_commands.describe(query="What do you want to search for?")
@@ -233,8 +285,15 @@ def create_bot(settings: Settings) -> ChadBot:
             query=query,
         )
         
-        # Send the response and capture the actual message ID
-        response_message = await interaction.followup.send(result.reply)
+        # Split long responses to fit Discord's character limit
+        chunks = split_message(result.reply)
+        
+        # Send the first chunk and capture the message ID
+        response_message = await interaction.followup.send(chunks[0])
+        
+        # Send remaining chunks as additional messages
+        for chunk in chunks[1:]:
+            await interaction.followup.send(chunk)
         
         # Update the database with the actual Discord message ID for better tracking
         if result.log_id and response_message:
@@ -245,7 +304,7 @@ def create_bot(settings: Settings) -> ChadBot:
                 result.log_id
             )
         
-        logger.info("Handled /googl from %s", interaction.user.id)
+        logger.info("Handled /googl from %s (chunks: %d)", interaction.user.id, len(chunks))
 
     @bot.tree.command(name="sync", description="Force sync slash commands (Restricted)")
     @app_commands.describe(scope="Whether to sync 'global' or 'guild' commands (default: global)")
