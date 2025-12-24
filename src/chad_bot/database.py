@@ -460,7 +460,15 @@ class Database:
             return [dict(r) for r in rows]
 
     async def analytics(self, guild_id: str) -> Dict[str, Any]:
-        data: Dict[str, Any] = {"status_counts": {}, "token_total": 0, "total_cost_usd": 0.0}
+        data: Dict[str, Any] = {
+            "status_counts": {},
+            "token_total": 0,
+            "total_cost_usd": 0.0,
+            "grok_cost_usd": 0.0,
+            "grok_tokens": 0,
+            "gemini_cost_usd": 0.0,
+            "gemini_tokens": 0,
+        }
         async with self.conn.execute(
             """
             SELECT status, COUNT(*) as cnt FROM message_log
@@ -483,6 +491,25 @@ class Database:
             if row:
                 data["token_total"] = row["token_total"] or 0
                 data["total_cost_usd"] = row["total_cost_usd"] or 0.0
+        # Get per-provider breakdown
+        async with self.conn.execute(
+            """
+            SELECT command_type,
+                   SUM(total_tokens) as tokens,
+                   SUM(COALESCE(estimated_cost_usd, 0)) as cost
+            FROM message_log
+            WHERE guild_id=? AND command_type IN ('ask', 'googl')
+            GROUP BY command_type;
+            """,
+            (guild_id,),
+        ) as cur:
+            for row in await cur.fetchall():
+                if row["command_type"] == "ask":
+                    data["grok_cost_usd"] = row["cost"] or 0.0
+                    data["grok_tokens"] = row["tokens"] or 0
+                elif row["command_type"] == "googl":
+                    data["gemini_cost_usd"] = row["cost"] or 0.0
+                    data["gemini_tokens"] = row["tokens"] or 0
         return data
 
     async def recent_messages(self, guild_id: str, limit: int = 25) -> List[Dict[str, Any]]:
