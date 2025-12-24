@@ -154,7 +154,7 @@ def create_bot(settings: Settings) -> ChadBot:
                 model=settings.gemini_model,
             )
         else:
-            logger.warning("GEMINI_API_KEY is set but 'google-genai' library is missing. /search will be disabled.")
+            logger.warning("GEMINI_API_KEY is set but 'google-genai' library is missing. /googl will be disabled.")
     
     yaml_config = YAMLConfig()
     processor = RequestProcessor(db=db, grok=grok, settings=settings, yaml_config=yaml_config, gemini=gemini)
