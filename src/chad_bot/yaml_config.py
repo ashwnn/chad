@@ -101,7 +101,8 @@ class YAMLConfig:
         return {
             "bot_settings": {
                 "reply_prefix": "",
-                "reply_suffix": ""
+                "reply_suffix": "",
+                "sync_allowed_user_ids": []
             },
             "system_prompt": (
                 "You are Chad, a Discord AI assistant. Always answer the user's question directly and concisely. "

@@ -34,6 +34,16 @@
             class="block w-full rounded-lg bg-vercel-surface border border-vercel-border py-2.5 px-4 text-white placeholder:text-vercel-text-muted focus:border-vercel-blue focus:ring-1 focus:ring-vercel-blue sm:text-sm">
           <p class="mt-1.5 text-xs text-vercel-text-muted">Leave empty for no suffix</p>
         </div>
+
+        <div class="sm:col-span-2">
+          <label for="sync_allowed_user_ids" class="block text-sm font-medium text-white mb-2">Sync Authorized User
+            IDs</label>
+          <input type="text" id="sync_allowed_user_ids"
+            placeholder="Comma-separated Discord User IDs (e.g. 123456789, 987654321)"
+            class="block w-full rounded-lg bg-vercel-surface border border-vercel-border py-2.5 px-4 text-white placeholder:text-vercel-text-muted focus:border-vercel-blue focus:ring-1 focus:ring-vercel-blue sm:text-sm">
+          <p class="mt-1.5 text-xs text-vercel-text-muted">User IDs allowed to run the /sync command. Replaces the
+            environment variable if set here.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -203,6 +213,10 @@
 
       document.getElementById('reply_prefix').value = data.bot_settings?.reply_prefix || '';
       document.getElementById('reply_suffix').value = data.bot_settings?.reply_suffix || '';
+
+      const syncIds = data.bot_settings?.sync_allowed_user_ids || [];
+      document.getElementById('sync_allowed_user_ids').value = Array.isArray(syncIds) ? syncIds.join(', ') : syncIds;
+
       document.getElementById('system_prompt').value = data.system_prompt || '';
 
       const messages = data.messages || {};
@@ -225,6 +239,10 @@
     const updates = {
       'bot_settings.reply_prefix': document.getElementById('reply_prefix').value,
       'bot_settings.reply_suffix': document.getElementById('reply_suffix').value,
+      'bot_settings.sync_allowed_user_ids': document.getElementById('sync_allowed_user_ids').value
+        .split(',')
+        .map(id => id.trim())
+        .filter(id => id.length > 0),
       'system_prompt': document.getElementById('system_prompt').value,
     };
 

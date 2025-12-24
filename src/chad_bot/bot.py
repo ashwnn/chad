@@ -247,6 +247,40 @@ def create_bot(settings: Settings) -> ChadBot:
         
         logger.info("Handled /googl from %s", interaction.user.id)
 
+    @bot.tree.command(name="sync", description="Force sync slash commands (Restricted)")
+    @app_commands.describe(scope="Whether to sync 'global' or 'guild' commands (default: global)")
+    async def sync_slash(interaction: discord.Interaction, scope: str = "global"):
+        """Restricted command to sync app commands."""
+        user_id = str(interaction.user.id)
+        
+        # Get allowed IDs from YAML config
+        allowed_ids = processor.yaml_config.get("bot_settings.sync_allowed_user_ids", [])
+
+        if user_id not in [str(uid) for uid in allowed_ids]:
+            await interaction.response.send_message("❌ You are not authorized to use this command.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            if scope.lower() == "guild":
+                if not interaction.guild:
+                    await interaction.followup.send("❌ This command must be run in a guild to sync guild commands.", ephemeral=True)
+                    return
+                # Copy global commands to guild
+                bot.tree.copy_global_to(guild=interaction.guild)
+                synced = await bot.tree.sync(guild=interaction.guild)
+                message = f"✅ Synced {len(synced)} command(s) to this guild."
+            else:
+                synced = await bot.tree.sync()
+                message = f"✅ Synced {len(synced)} command(s) globally. (Note: Global changes can take up to an hour to propagate)"
+            
+            await interaction.followup.send(message, ephemeral=True)
+            logger.info("Bot commands synced by %s (scope: %s)", user_id, scope)
+        except Exception as e:
+            await interaction.followup.send(f"❌ Failed to sync: {e}", ephemeral=True)
+            logger.error("Failed to sync commands: %s", e)
+
     return bot
 
 
