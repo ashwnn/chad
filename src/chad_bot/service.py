@@ -60,6 +60,58 @@ class RequestProcessor:
             return self.yaml_config.get_message("chat_budget_guild")
         return None
 
+    async def execute_chat(
+        self,
+        *,
+        system_prompt: str,
+        user_content: str,
+        config,
+    ):
+        """
+        Execute a chat request using Grok.
+        Returns (content, usage_dict, estimated_cost_usd).
+        """
+        grok_result = await self.grok.chat(
+            system_prompt=system_prompt,
+            user_content=user_content,
+            temperature=config.temperature,
+            max_tokens=config.max_completion_tokens,
+        )
+        
+        usage = grok_result.usage or {}
+        prompt_tokens = usage.get("prompt_tokens", 0) or 0
+        completion_tokens = usage.get("completion_tokens", 0) or 0
+        cost = (
+            (prompt_tokens / 1_000_000.0) * self.prompt_price_per_m_token
+            + (completion_tokens / 1_000_000.0) * self.completion_price_per_m_token
+        ) if (prompt_tokens or completion_tokens) else None
+
+        return grok_result.content, usage, cost
+
+    async def execute_search(
+        self,
+        *,
+        query: str,
+    ):
+        """
+        Execute a search request using Gemini.
+        Returns (content, usage_dict, estimated_cost_usd, grounding_metadata).
+        """
+        if self.gemini is None:
+            raise ValueError("Gemini client is not configured")
+
+        search_result = await self.gemini.search(query)
+        
+        usage = search_result.usage or {}
+        prompt_tokens = usage.get("prompt_tokens", 0) or 0
+        completion_tokens = usage.get("completion_tokens", 0) or 0
+        cost = (
+            (prompt_tokens / 1_000_000.0) * self.gemini_prompt_price_per_m_token
+            + (completion_tokens / 1_000_000.0) * self.gemini_completion_price_per_m_token
+        ) if (prompt_tokens or completion_tokens) else None
+        
+        return search_result.content, usage, cost, search_result.grounding_metadata
+
     async def process_chat(
         self,
         *,
@@ -186,11 +238,10 @@ class RequestProcessor:
             system_prompt = self.yaml_config.get_system_prompt()
 
         try:
-            grok_result = await self.grok.chat(
+            content_resp, usage, cost = await self.execute_chat(
                 system_prompt=system_prompt,
                 user_content=content,
-                temperature=config.temperature,
-                max_tokens=config.max_completion_tokens,
+                config=config
             )
         except Exception as exc:  # noqa: BLE001
             reply = self.yaml_config.format_reply(self.yaml_config.get_message("ai_error_chat"))
@@ -207,14 +258,10 @@ class RequestProcessor:
             )
             return ProcessResult(reply=reply, log_id=log_id, status="error", error=str(exc))
 
-        usage = grok_result.usage or {}
         total_tokens = usage.get("total_tokens", 0) or 0
         prompt_tokens = usage.get("prompt_tokens", 0) or 0
         completion_tokens = usage.get("completion_tokens", 0) or 0
-        cost = (
-            (prompt_tokens / 1_000_000.0) * self.prompt_price_per_m_token
-            + (completion_tokens / 1_000_000.0) * self.completion_price_per_m_token
-        ) if (prompt_tokens or completion_tokens) else None
+
         log_id = await self.db.record_message(
             guild_id=guild_id,
             channel_id=channel_id,
@@ -223,9 +270,9 @@ class RequestProcessor:
             command_type="ask",
             user_content=content,
             grok_request_payload={"model": self.grok.chat_model, "max_tokens": config.max_completion_tokens},
-            grok_response_content=grok_result.content,
-            prompt_tokens=usage.get("prompt_tokens"),
-            completion_tokens=usage.get("completion_tokens"),
+            grok_response_content=content_resp,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
             total_tokens=total_tokens,
             estimated_cost_usd=cost,
             status="auto_responded",
@@ -234,7 +281,7 @@ class RequestProcessor:
             await self.db.increment_daily_chat_usage(guild_id, user_id, total_tokens)
         
         # Format reply with question prefix and prefix/suffix
-        formatted_reply = self.yaml_config.format_reply(grok_result.content)
+        formatted_reply = self.yaml_config.format_reply(content_resp)
         return ProcessResult(reply=formatted_reply, log_id=log_id, status="auto_responded")
 
     async def process_search(
@@ -319,6 +366,25 @@ class RequestProcessor:
             )
             return ProcessResult(reply=reply, log_id=log_id)
 
+        # Pending approval check for search
+        # Note: We do not check admin bypass for search currently, or we can assume search needs approval
+        # if auto_approve_enabled is on.
+        # Assuming admin check is similar to Chat. But process_search sig doesn't have is_admin.
+        # For now, we'll adhere to config.auto_approve_enabled.
+        if config.auto_approve_enabled:
+             log_id = await self.db.record_message(
+                guild_id=guild_id,
+                channel_id=channel_id,
+                user_id=user_id,
+                discord_message_id=discord_message_id,
+                command_type="googl",
+                user_content=query,
+                status="pending_approval",
+                needs_approval=True,
+            )
+             reply = self.yaml_config.format_reply(self.yaml_config.get_message("pending_approval_chat"))
+             return ProcessResult(reply=reply, log_id=log_id, status="pending_approval")
+
         # Check if Gemini client is available
         if self.gemini is None:
             reply = "🔍 Search is not available - Gemini API is not configured."
@@ -337,7 +403,7 @@ class RequestProcessor:
 
         # Perform the grounded search
         try:
-            search_result = await self.gemini.search(query)
+            content_resp, usage, cost, _ = await self.execute_search(query=query)
         except Exception as exc:  # noqa: BLE001
             reply = "🔍 Search failed - an error occurred while processing your request."
             log_id = await self.db.record_message(
@@ -354,14 +420,9 @@ class RequestProcessor:
             return ProcessResult(reply=reply, log_id=log_id, status="error", error=str(exc))
 
         # Calculate token usage and cost
-        usage = search_result.usage or {}
         total_tokens = usage.get("total_tokens", 0) or 0
         prompt_tokens = usage.get("prompt_tokens", 0) or 0
         completion_tokens = usage.get("completion_tokens", 0) or 0
-        cost = (
-            (prompt_tokens / 1_000_000.0) * self.gemini_prompt_price_per_m_token
-            + (completion_tokens / 1_000_000.0) * self.gemini_completion_price_per_m_token
-        ) if (prompt_tokens or completion_tokens) else None
 
         # Log the successful search
         log_id = await self.db.record_message(
@@ -372,7 +433,7 @@ class RequestProcessor:
             command_type="googl",
             user_content=query,
             grok_request_payload={"model": self.gemini.model if self.gemini else "unknown"},
-            grok_response_content=search_result.content,
+            grok_response_content=content_resp,
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
             total_tokens=total_tokens,
@@ -385,6 +446,6 @@ class RequestProcessor:
             await self.db.increment_daily_chat_usage(guild_id, user_id, total_tokens)
 
         # Format the response with search indicator
-        formatted_reply = f"{search_result.content}"
+        formatted_reply = f"{content_resp}"
         return ProcessResult(reply=formatted_reply, log_id=log_id, status="auto_responded")
 

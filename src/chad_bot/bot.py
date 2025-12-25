@@ -75,11 +75,13 @@ class ChadBot(commands.Bot):
         await self.db.create_schema()
         logger.info("Database ready at %s", self.db.path)
         # Sync slash commands with Discord
-        try:
-            synced = await self.tree.sync()
-            logger.info(f"Synced {len(synced)} slash command(s)")
-        except Exception as e:
-            logger.error(f"Failed to sync commands: {e}")
+        # NOTE: Automatic sync disabled to prevent rate limits.
+        # Run !sync or /sync to manually sync commands.
+        # try:
+        #     synced = await self.tree.sync()
+        #     logger.info(f"Synced {len(synced)} slash command(s)")
+        # except Exception as e:
+        #     logger.error(f"Failed to sync commands: {e}")
 
     async def close(self) -> None:
         """Close the bot and clean up resources."""

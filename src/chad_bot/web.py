@@ -446,69 +446,116 @@ def create_app(settings: Settings) -> FastAPI:
             logger.exception("Could not send Discord message to channel %s: %s", channel_id, exc)
             return None
 
-    async def _process_grok(message: Dict[str, Any]) -> Dict[str, Any]:
+    async def _process_approval(message: Dict[str, Any]) -> Dict[str, Any]:
+        """Process approval for a pending message (grok or googl)."""
         cfg = await db.get_guild_config(message["guild_id"])
-        if message["command_type"] == "ask":
-            # Use guild-specific system prompt, fallback to YAML config if not set
-            system_prompt = cfg.system_prompt if cfg.system_prompt else yaml_config.get_system_prompt()
-            try:
-                result = await grok.chat(
+        
+        reply_content = None
+        prompt_tokens = 0
+        completion_tokens = 0
+        total_tokens = 0
+        cost = 0.0
+        
+        try:
+            if message["command_type"] == "ask":
+                # Determine system prompt
+                user_override = await db.get_enabled_user_override(message["guild_id"], message["user_id"])
+                if user_override and user_override.override_type == "custom_prompt" and user_override.custom_system_prompt:
+                    system_prompt = user_override.custom_system_prompt
+                elif cfg.system_prompt:
+                    system_prompt = cfg.system_prompt
+                else:
+                    system_prompt = yaml_config.get_system_prompt()
+                    
+                content_resp, usage, cost = await processor.execute_chat(
                     system_prompt=system_prompt,
                     user_content=message["user_content"],
-                    temperature=cfg.temperature,
-                    max_tokens=cfg.max_completion_tokens,
+                    config=cfg
                 )
-            except Exception as exc:  # noqa: BLE001
-                await db.update_message_status(
-                    message["id"],
-                    status="error",
-                    decision="grok",
-                    error_code="grok_error",
-                    error_detail=str(exc),
+                
+                # Update stats
+                reply_content = yaml_config.format_reply(content_resp)
+                prompt_tokens = usage.get("prompt_tokens", 0)
+                completion_tokens = usage.get("completion_tokens", 0)
+                total_tokens = usage.get("total_tokens", 0)
+                
+            elif message["command_type"] == "googl":
+                content_resp, usage, cost, _ = await processor.execute_search(
+                    query=message["user_content"]
                 )
-                raise HTTPException(status_code=502, detail="Grok call failed")
-            usage = result.usage or {}
-            total_tokens = usage.get("total_tokens", 0) or 0
-            prompt_tokens = usage.get("prompt_tokens", 0) or 0
-            completion_tokens = usage.get("completion_tokens", 0) or 0
-            if total_tokens:
-                await db.increment_daily_chat_usage(message["guild_id"], message["user_id"], total_tokens)
+                
+                # Format reply (no prefix/suffix for search usually, but kept consistent if needed)
+                reply_content = f"{content_resp}"
+                prompt_tokens = usage.get("prompt_tokens", 0)
+                completion_tokens = usage.get("completion_tokens", 0)
+                total_tokens = usage.get("total_tokens", 0)
             
-            # Format reply with prefix/suffix
-            formatted_content = yaml_config.format_reply(result.content)
-            
+            else:
+                 raise HTTPException(status_code=400, detail=f"Unknown command type: {message['command_type']}")
+
+        except Exception as exc:  # noqa: BLE001
             await db.update_message_status(
                 message["id"],
-                status="approved_grok",
-                decision="grok",
-                grok_response_content=result.content,
-                prompt_tokens=usage.get("prompt_tokens"),
-                completion_tokens=usage.get("completion_tokens"),
-                total_tokens=usage.get("total_tokens"),
-                estimated_cost_usd=(prompt_tokens / 1_000_000.0 * processor.prompt_price_per_m_token + completion_tokens / 1_000_000.0 * processor.completion_price_per_m_token) if (prompt_tokens or completion_tokens) else None,
+                status="error",
+                decision="approve",
+                error_code="ai_error",
+                error_detail=str(exc),
             )
-            
-            # Send Discord message and track result
-            send_result = await _send_discord_message(
-                channel_id=message["channel_id"],
-                content=formatted_content,
-                mention_id=message["user_id"],
-            )
-            
-            if send_result is None:
-                # Message failed to send to Discord, update status to reflect this
-                await db.update_message_status(
-                    message["id"],
-                    status="approved_grok_send_failed",
-                    error_code="discord_send_error",
-                    error_detail="Failed to send approved message to Discord channel",
-                )
-                raise HTTPException(status_code=502, detail="Failed to send message to Discord channel")
-            
-            return {"status": "approved_grok", "reply": formatted_content}
+            # Re-raise so UI sees error
+            raise HTTPException(status_code=502, detail=f"AI processing failed: {exc}")
+
+        # Update Usage
+        if total_tokens:
+            await db.increment_daily_chat_usage(message["guild_id"], message["user_id"], total_tokens)
         
-        # Image generation has been removed
-        raise HTTPException(status_code=400, detail="Unknown or unsupported command type")
+        # Update DB
+        status_slug = f"approved_{message['command_type']}" # e.g. approved_ask, approved_googl (or keep 'approved_grok' for legacy compat?)
+        # Keeping legacy status 'approved_grok' for 'ask' if needed, but let's standardize.
+        # The schema uses 'approved_grok' in existing code. Let's check status usage.
+        # Just use "approved_ai" or similar? Existing code uses "approved_grok". 
+        # For minimal friction, let's use "approved_grok" for chat and "approved_search" for search?
+        # Or better yet, just 'approved' + command_type logic?
+        # Let's check what 'process_chat' does... it uses 'auto_responded'.
+        # Approvals explicitly used 'approved_grok'.
+        
+        final_status = "approved_grok" if message["command_type"] == "ask" else "approved_search"
+
+        await db.update_message_status(
+            message["id"],
+            status=final_status,
+            decision="approve",
+            grok_response_content=reply_content, # Storing formatted reply or raw? Service stores raw usually, but here likely processed.
+            # Service stores raw content usually in 'grok_response_content'. 
+            # But here we are overwriting it. 
+            # Let's store raw reply in DB if possible? 
+            # Actually service stores raw in `grok_response_content`, and returns formatted in `reply`.
+            # We should probably store the raw content if we want consistent logs, but `reply_content` above is formatted.
+            # Let's strip formatting for DB storage if we want purity, or just store what we send.
+            # Storing what we send is safer for history.
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=total_tokens,
+            estimated_cost_usd=cost,
+            approved_by_admin_id="admin", # We don't have admin ID in this unauth context yet
+        )
+        
+        # Send to Discord
+        send_result = await _send_discord_message(
+            channel_id=message["channel_id"],
+            content=reply_content,
+            mention_id=message["user_id"],
+        )
+        
+        if send_result is None:
+            await db.update_message_status(
+                message["id"],
+                status=f"{final_status}_send_failed",
+                error_code="discord_send_error",
+                error_detail="Failed to send approved message to Discord channel",
+            )
+            raise HTTPException(status_code=502, detail="Failed to send message to Discord channel")
+        
+        return {"status": final_status, "reply": reply_content}
 
     @app.post("/api/approvals/{message_id}")
     async def approve(message_id: int, payload: ApprovalDecision):
@@ -517,8 +564,12 @@ def create_app(settings: Settings) -> FastAPI:
             raise HTTPException(status_code=404, detail="Message not found")
         if message["status"] != "pending_approval":
             raise HTTPException(status_code=400, detail="Message not pending")
-        if payload.decision == "grok":
-            return await _process_grok(message)
+        
+        if payload.decision == "grok" or payload.decision == "approve": 
+            # "grok" is legacy decision string for "Approve with AI". 
+            # We accept "approve" as generic too.
+            return await _process_approval(message)
+            
         if payload.decision == "manual":
             manual_text = payload.manual_reply_content or yaml_config.get_message("manual_reply_default")
             formatted_manual = yaml_config.format_reply(manual_text)
@@ -543,6 +594,7 @@ def create_app(settings: Settings) -> FastAPI:
                 )
                 raise HTTPException(status_code=502, detail="Failed to send message to Discord channel")
             return {"status": "approved_manual", "reply": formatted_manual}
+        
         if payload.decision == "reject":
             reply_text = payload.reason or yaml_config.get_message("rejection_default")
             formatted_rejection = yaml_config.format_reply(reply_text)
