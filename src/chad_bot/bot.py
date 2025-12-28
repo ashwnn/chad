@@ -309,7 +309,7 @@ def create_bot(settings: Settings) -> ChadBot:
         logger.info("Handled /googl from %s (chunks: %d)", interaction.user.id, len(chunks))
 
     @bot.tree.command(name="sync", description="Force sync slash commands (Restricted)")
-    @app_commands.describe(scope="Whether to sync 'global' or 'guild' commands (default: global)")
+    @app_commands.describe(scope="Options: 'global' (default), 'guild', or 'clear' (removes guild commands)")
     async def sync_slash(interaction: discord.Interaction, scope: str = "global"):
         """Restricted command to sync app commands."""
         user_id = str(interaction.user.id)
@@ -324,7 +324,15 @@ def create_bot(settings: Settings) -> ChadBot:
         await interaction.response.defer(ephemeral=True)
         
         try:
-            if scope.lower() == "guild":
+            if scope.lower() == "clear":
+                if not interaction.guild:
+                    await interaction.followup.send("❌ This command must be run in a guild to clear guild commands.", ephemeral=True)
+                    return
+                # Clear guild-specific commands (fixes duplicate commands issue)
+                bot.tree.clear_commands(guild=interaction.guild)
+                await bot.tree.sync(guild=interaction.guild)
+                message = "✅ Cleared all guild-specific commands. Only global commands remain."
+            elif scope.lower() == "guild":
                 if not interaction.guild:
                     await interaction.followup.send("❌ This command must be run in a guild to sync guild commands.", ephemeral=True)
                     return
