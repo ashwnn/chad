@@ -4,12 +4,14 @@ from contextlib import asynccontextmanager
 from typing import Any, Dict, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, Field
+from starlette.responses import JSONResponse
 
-from .config import Settings
+from .config import Settings, setup_logging
 from .database import GuildConfig, Database, UserOverride
 from .discord_api import DiscordApiClient
 from .grok_client import GrokClient
@@ -61,7 +63,34 @@ class UserOverrideUpdate(BaseModel):
     enabled: Optional[bool] = None
 
 
+class SimpleRateLimiter:
+    """In-memory sliding window limiter keyed by client host."""
+
+    def __init__(self, max_per_minute: int):
+        self.max_per_minute = max_per_minute
+        self._buckets: Dict[str, list[float]] = {}
+        self._lock = asyncio.Lock()
+
+    async def allow(self, key: str) -> tuple[bool, int]:
+        now = asyncio.get_event_loop().time()
+        window_start = now - 60
+        async with self._lock:
+            timestamps = self._buckets.get(key, [])
+            # Drop expired timestamps
+            timestamps = [t for t in timestamps if t >= window_start]
+            if len(timestamps) >= self.max_per_minute:
+                retry_after = max(1, int(timestamps[0] - window_start))
+                self._buckets[key] = timestamps
+                return False, retry_after
+            timestamps.append(now)
+            self._buckets[key] = timestamps
+        return True, 0
+
+
 def create_app(settings: Settings) -> FastAPI:
+    setup_logging(settings)
+    settings.validate(require_grok=True)
+
     db = Database(settings.database_path)
     grok = GrokClient(
         api_key=settings.grok_api_key,
@@ -71,6 +100,7 @@ def create_app(settings: Settings) -> FastAPI:
     discord_api = DiscordApiClient(settings.discord_token)
     yaml_config = YAMLConfig()
     processor = RequestProcessor(db=db, grok=grok, settings=settings, yaml_config=yaml_config)
+    api_rate_limiter = SimpleRateLimiter(settings.api_rate_limit_per_minute)
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -86,8 +116,33 @@ def create_app(settings: Settings) -> FastAPI:
 
     app = FastAPI(title="Chad Bot Admin", lifespan=lifespan)
 
+    allow_origins = ["*"] if "*" in settings.cors_origins else list(settings.cors_origins)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=allow_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
+    @app.middleware("http")
+    async def rate_limit_middleware(request: Request, call_next):
+        if request.url.path.startswith("/api"):
+            client_host = request.client.host if request.client else "unknown"
+            allowed, retry_after = await api_rate_limiter.allow(client_host)
+            if not allowed:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": "Too many requests", "retry_after": retry_after},
+                )
+        return await call_next(request)
+
     templates = Jinja2Templates(directory="templates")
     app.mount("/static", StaticFiles(directory="static"), name="static")
+
+    @app.get("/health")
+    async def health():
+        return {"status": "ok"}
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
@@ -442,7 +497,7 @@ def create_app(settings: Settings) -> FastAPI:
             result = await discord_api.send_message(channel_id=channel_id, content=content, mention_user_id=mention_id)
             logger.info("Successfully sent message to channel %s", channel_id)
             return result
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             logger.exception("Could not send Discord message to channel %s: %s", channel_id, exc)
             return None
 
@@ -493,7 +548,7 @@ def create_app(settings: Settings) -> FastAPI:
             else:
                  raise HTTPException(status_code=400, detail=f"Unknown command type: {message['command_type']}")
 
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             await db.update_message_status(
                 message["id"],
                 status="error",
@@ -645,12 +700,6 @@ def create_app(settings: Settings) -> FastAPI:
         
         return {"status": "deleted", "message_id": message_id}
 
-    @app.get("/health")
-    async def health():
-        return {"ok": True}
-
-
-
     return app
 
 
@@ -660,8 +709,8 @@ app = create_app(Settings())
 def run() -> None:
     import uvicorn
 
-    logging.basicConfig(level=logging.INFO)
     settings = Settings()
+    setup_logging(settings)
     uvicorn.run("chad_bot.web:app", host=settings.web_host, port=settings.web_port, reload=False)
 
 
