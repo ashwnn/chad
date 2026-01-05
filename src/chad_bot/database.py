@@ -60,7 +60,7 @@ class Database:
         self._lock = asyncio.Lock()
         # Guild config cache: {guild_id: (GuildConfig, timestamp)}
         self._guild_config_cache: Dict[str, Tuple[GuildConfig, float]] = {}
-        self._cache_ttl_seconds = 300  # 5 minute cache TTL to avoid excessive DB hits
+        self._cache_ttl_seconds = 5  # 5 second cache TTL to avoid excessive DB hits
 
     async def connect(self) -> None:
         self._conn = await aiosqlite.connect(self.path)
