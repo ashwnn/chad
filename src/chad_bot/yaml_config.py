@@ -5,6 +5,7 @@ Handles loading, updating, and saving YAML configuration files.
 import logging
 from pathlib import Path
 from typing import Any, Dict, Optional
+from threading import Lock
 
 import yaml
 
@@ -18,6 +19,7 @@ class YAMLConfig:
         self.config_path = Path(config_path)
         self._config: Dict[str, Any] = {}
         self._last_mtime: float = 0
+        self._lock = Lock()
         self.load()
     
     def load(self) -> None:
@@ -29,9 +31,10 @@ class YAMLConfig:
             return
         
         try:
-            with open(self.config_path, 'r', encoding='utf-8') as f:
-                self._config = yaml.safe_load(f) or {}
-            self._last_mtime = self.config_path.stat().st_mtime
+            with self._lock:
+                with open(self.config_path, 'r', encoding='utf-8') as f:
+                    self._config = yaml.safe_load(f) or {}
+                self._last_mtime = self.config_path.stat().st_mtime
             logger.info(f"Loaded config from {self.config_path} (mtime: {self._last_mtime})")
         except Exception as e:
             logger.error(f"Error loading config file: {e}")
@@ -41,9 +44,10 @@ class YAMLConfig:
     def save(self) -> None:
         """Save current configuration to YAML file."""
         try:
-            with open(self.config_path, 'w', encoding='utf-8') as f:
-                yaml.safe_dump(self._config, f, default_flow_style=False, allow_unicode=True)
-            self._last_mtime = self.config_path.stat().st_mtime
+            with self._lock:
+                with open(self.config_path, 'w', encoding='utf-8') as f:
+                    yaml.safe_dump(self._config, f, default_flow_style=False, allow_unicode=True)
+                self._last_mtime = self.config_path.stat().st_mtime
             logger.info(f"Saved config to {self.config_path} (mtime: {self._last_mtime})")
         except Exception as e:
             logger.error(f"Error saving config file: {e}")
@@ -127,7 +131,7 @@ class YAMLConfig:
                 "manual_reply_default": "Admin reply.",
                 "rejection_default": "Request rejected by an admin.",
                 "invalid_input": "Invalid input.",
-                "unknown_error": "Something went wrong. Try again."
+                "unknown_error": "Unexpected error. Please retry or contact an admin if it persists."
             }
         }
     
