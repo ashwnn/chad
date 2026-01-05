@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Optional
 
@@ -8,6 +9,8 @@ from .grok_client import GrokClient
 from .rate_limits import RateLimitResult, RateLimitRule, check_rate_limit
 from .spam import ValidationResult, validate_prompt
 from .yaml_config import YAMLConfig
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -40,6 +43,7 @@ class RequestProcessor:
         # Gemini Flash-Lite pricing (approximate)
         self.gemini_prompt_price_per_m_token = 0.075
         self.gemini_completion_price_per_m_token = 0.30
+        self.search_rate_limit_rule = RateLimitRule(120, 3)
 
     async def _check_duplicate(self, guild_id: str, user_id: str, content: str, window_seconds: int) -> bool:
         async with self.db.conn.execute(
@@ -243,7 +247,8 @@ class RequestProcessor:
                 user_content=content,
                 config=config
             )
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
+            logger.exception("Grok chat failed for guild=%s user=%s", guild_id, user_id)
             reply = self.yaml_config.format_reply(self.yaml_config.get_message("ai_error_chat"))
             log_id = await self.db.record_message(
                 guild_id=guild_id,
@@ -292,6 +297,7 @@ class RequestProcessor:
         user_id: str,
         discord_message_id: Optional[str],
         query: str,
+        is_admin: bool,
     ) -> ProcessResult:
         """
         Process a /googl command using Gemini with Google Search grounding.
@@ -339,14 +345,13 @@ class RequestProcessor:
             )
             return ProcessResult(reply=reply, log_id=log_id, status="auto_responded")
 
-        # Apply rate limiting (reuse ask rate limits for search)
-        rate_limit_rule = RateLimitRule(config.ask_window_seconds, config.ask_max_per_window)
+        # Apply dedicated rate limiting for search
         rate_result: RateLimitResult = await check_rate_limit(
             self.db,
             guild_id=guild_id,
             user_id=user_id,
             command_type="googl",
-            rule=rate_limit_rule,
+            rule=self.search_rate_limit_rule,
             yaml_config=self.yaml_config,
         )
         if not rate_result.allowed:
@@ -366,13 +371,9 @@ class RequestProcessor:
             )
             return ProcessResult(reply=reply, log_id=log_id)
 
-        # Pending approval check for search
-        # Note: We do not check admin bypass for search currently, or we can assume search needs approval
-        # if auto_approve_enabled is on.
-        # Assuming admin check is similar to Chat. But process_search sig doesn't have is_admin.
-        # For now, we'll adhere to config.auto_approve_enabled.
-        if config.auto_approve_enabled:
-             log_id = await self.db.record_message(
+        # Pending approval check with admin bypass support
+        if config.auto_approve_enabled and not (config.admin_bypass_auto_approve and is_admin):
+            log_id = await self.db.record_message(
                 guild_id=guild_id,
                 channel_id=channel_id,
                 user_id=user_id,
@@ -382,8 +383,8 @@ class RequestProcessor:
                 status="pending_approval",
                 needs_approval=True,
             )
-             reply = self.yaml_config.format_reply(self.yaml_config.get_message("pending_approval_chat"))
-             return ProcessResult(reply=reply, log_id=log_id, status="pending_approval")
+            reply = self.yaml_config.format_reply(self.yaml_config.get_message("pending_approval_chat"))
+            return ProcessResult(reply=reply, log_id=log_id, status="pending_approval")
 
         # Check if Gemini client is available
         if self.gemini is None:
@@ -404,8 +405,23 @@ class RequestProcessor:
         # Perform the grounded search
         try:
             content_resp, usage, cost, _ = await self.execute_search(query=query)
-        except Exception as exc:  # noqa: BLE001
-            reply = "🔍 Search failed - an error occurred while processing your request."
+        except ValueError as exc:
+            reply = "🔍 Search is not configured correctly."
+            log_id = await self.db.record_message(
+                guild_id=guild_id,
+                channel_id=channel_id,
+                user_id=user_id,
+                discord_message_id=discord_message_id,
+                command_type="googl",
+                user_content=query,
+                status="error",
+                error_code="gemini_not_configured",
+                error_detail=str(exc),
+            )
+            return ProcessResult(reply=reply, log_id=log_id, status="error", error=str(exc))
+        except Exception as exc:
+            logger.exception("Gemini search failed for guild=%s user=%s", guild_id, user_id)
+            reply = "🔍 Search failed - an unexpected error occurred while processing your request."
             log_id = await self.db.record_message(
                 guild_id=guild_id,
                 channel_id=channel_id,
