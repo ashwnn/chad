@@ -1,4 +1,4 @@
-FROM python:3.14-slim
+FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -21,8 +21,8 @@ COPY templates/ /app/templates/
 COPY static/ /app/static/
 COPY config/ /app/config/
 
-# Create data dir for SQLite
-RUN mkdir -p /data
+# Create data dir for SQLite and logs
+RUN mkdir -p /data /data/logs
 VOLUME ["/data"]
 
 EXPOSE 8000

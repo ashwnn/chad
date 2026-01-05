@@ -48,8 +48,11 @@ services:
     networks:
       - apps
     healthcheck:
-      test: ["CMD", "sh", "-c", "true"]
+      test: ["CMD", "sh", "-c", "curl -f http://web:${WEB_PORT:-8000}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 networks:
   apps:
-    external: true
+    driver: bridge
