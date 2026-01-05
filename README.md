@@ -33,23 +33,34 @@ Chad is a feature‑rich Discord bot powered by Grok AI. It provides intelligent
    ```bash
    pip install -r requirements.txt
    ```
-4. **Create a `.env` file** with the required variables (see Configuration).
+4. **Create a `.env` file** with the required variables (see Configuration). A starter template lives in `.env.example`:
+   ```bash
+   cp .env.example .env
+   ```
 
 ## Usage
 
-Run the bot and the dashboard in separate terminals:
+### Docker (recommended)
+
+Run both services together:
 
 ```bash
-# Terminal 1 – Discord bot
+docker compose up --build
+```
+
+The dashboard will be available at `http://localhost:${WEB_PORT:-8000}` and the bot will start in the same stack.
+
+### Local (manual)
+
+If you prefer running without Docker, start two terminals:
+
+```bash
+# Terminal 1 – Web dashboard
+python -m chad_bot.web
+
+# Terminal 2 – Discord bot
 python -m chad_bot.bot
 ```
-
-```bash
-# Terminal 2 – Web dashboard (FastAPI)
-python -m chad_bot.web
-```
-
-The dashboard will be available at `http://localhost:8000`.
 
 ## Configuration
 
