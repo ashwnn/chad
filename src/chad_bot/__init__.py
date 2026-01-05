@@ -7,3 +7,17 @@ Run the bot with:
 Run the web UI with:
     uvicorn chad_bot.web:app
 """
+
+__all__ = [
+    "bot",
+    "web",
+    "service",
+    "database",
+    "config",
+    "rate_limits",
+    "spam",
+    "grok_client",
+    "gemini_client",
+    "yaml_config",
+    "discord_api",
+]

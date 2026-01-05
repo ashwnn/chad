@@ -6,7 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
-from .config import Settings
+from .config import Settings, setup_logging
 from .database import Database
 from .gemini_client import GeminiClient
 from .grok_client import GrokClient
@@ -35,30 +35,60 @@ def split_message(text: str, max_length: int = DISCORD_MAX_LENGTH) -> list[str]:
         if len(remaining) <= max_length:
             chunks.append(remaining)
             break
-        
-        # Find a good split point
+
         split_point = max_length
-        
-        # Try to split at a double newline (paragraph break) first
+
+        # Prefer paragraph or line boundaries within the allowed window
         para_break = remaining.rfind("\n\n", 0, max_length)
-        if para_break > max_length // 2:  # Only use if reasonably far into the chunk
-            split_point = para_break + 2  # Include the newlines in the first chunk
+        if para_break > max_length // 2:
+            split_point = para_break + 2
         else:
-            # Try to split at a single newline
             newline = remaining.rfind("\n", 0, max_length)
             if newline > max_length // 2:
                 split_point = newline + 1
             else:
-                # Try to split at a space
                 space = remaining.rfind(" ", 0, max_length)
                 if space > max_length // 2:
                     split_point = space + 1
-                # Otherwise just hard split at max_length
-        
-        chunks.append(remaining[:split_point].rstrip())
+
+        segment = remaining[:split_point]
+
+        # Avoid cutting through fenced code blocks (track ``` balance)
+        if segment.count("```") % 2 != 0:
+            fence_start = segment.rfind("```")
+            if fence_start > 0:
+                segment = remaining[:fence_start]
+                split_point = fence_start
+
+        if split_point == 0:
+            split_point = max_length
+            segment = remaining[:split_point]
+
+        chunks.append(segment.rstrip())
         remaining = remaining[split_point:].lstrip()
     
     return chunks
+
+
+async def _is_admin_user(user: discord.User | discord.Member, guild_id: str, db: Database) -> bool:
+    """Determine if a user is admin either via Discord perms or database config."""
+    user_id = str(user.id)
+
+    if isinstance(user, discord.Member):
+        perms = user.guild_permissions
+        if perms and (perms.administrator or perms.manage_guild):
+            return True
+
+    if await db.is_admin(user_id, guild_id):
+        return True
+
+    config = await db.get_guild_config(guild_id)
+    if config.admin_user_ids:
+        admin_ids = [uid.strip() for uid in config.admin_user_ids.split(",") if uid.strip()]
+        if user_id in admin_ids:
+            return True
+
+    return False
 
 
 class ChadBot(commands.Bot):
@@ -217,22 +247,7 @@ def create_bot(settings: Settings) -> ChadBot:
             return
         
         # Check if user is admin
-        is_admin = False
-        user_id = str(interaction.user.id)
-        
-        # Check Discord permissions first
-        if interaction.user.guild_permissions and (interaction.user.guild_permissions.administrator or interaction.user.guild_permissions.manage_guild):
-            is_admin = True
-        # Check admin_users table
-        elif await db.is_admin(user_id, guild_id):
-            is_admin = True
-        # Check admin_user_ids config field
-        else:
-            config = await db.get_guild_config(guild_id)
-            if config.admin_user_ids:
-                admin_ids = [uid.strip() for uid in config.admin_user_ids.split(",") if uid.strip()]
-                if user_id in admin_ids:
-                    is_admin = True
+        is_admin = await _is_admin_user(interaction.user, guild_id, db)
         
         # Defer response as processing might take time
         await interaction.response.defer()
@@ -279,12 +294,15 @@ def create_bot(settings: Settings) -> ChadBot:
         # Defer response as search might take time
         await interaction.response.defer()
         
+        is_admin = await _is_admin_user(interaction.user, guild_id, db)
+
         result = await processor.process_search(
             guild_id=guild_id,
             channel_id=str(interaction.channel.id) if interaction.channel else "",
             user_id=str(interaction.user.id),
             discord_message_id=str(interaction.id),
             query=query,
+            is_admin=is_admin,
         )
         
         # Split long responses to fit Discord's character limit
@@ -354,11 +372,16 @@ def create_bot(settings: Settings) -> ChadBot:
 
 
 async def run_bot():
-    logging.basicConfig(level=logging.INFO)
     settings = Settings()
+    setup_logging(settings)
     bot = create_bot(settings)
     if not settings.discord_token:
         logger.error("DISCORD_BOT_TOKEN is required to start the bot.")
+        return
+    try:
+        settings.validate(require_discord=True, require_grok=True)
+    except RuntimeError as exc:
+        logger.error(str(exc))
         return
     async with bot:
         await bot.start(settings.discord_token)
