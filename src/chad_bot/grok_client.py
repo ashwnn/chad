@@ -22,6 +22,14 @@ class GrokClient:
         # Persistent HTTP client with connection pooling
         self._client: Optional[httpx.AsyncClient] = None
 
+    @staticmethod
+    def _sanitize_text(text: str) -> str:
+        """Strip control chars that can cause API 400s while keeping whitespace."""
+        if text is None:
+            return ""
+        # Remove ASCII control chars except tab/newline/carriage return
+        return "".join(ch for ch in str(text) if ch >= " " or ch in "\t\n\r").strip()
+
     async def _get_client(self) -> httpx.AsyncClient:
         """Get or create the persistent async HTTP client."""
         if self._client is None:
@@ -53,13 +61,16 @@ class GrokClient:
             }
             return ChatResult(content=fake["choices"][0]["message"]["content"], usage=fake["usage"], raw=fake)
 
+        safe_system = self._sanitize_text(system_prompt)
+        safe_user = self._sanitize_text(user_content)
+
         payload = {
             "model": self.chat_model,
             "temperature": temperature,
             "max_tokens": max_tokens,
             "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_content},
+                {"role": "system", "content": safe_system},
+                {"role": "user", "content": safe_user},
             ],
         }
         client = await self._get_client()
