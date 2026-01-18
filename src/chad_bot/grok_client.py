@@ -1,7 +1,10 @@
+import logging
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -60,12 +63,29 @@ class GrokClient:
             ],
         }
         client = await self._get_client()
-        resp = await client.post(
-            "/chat/completions",
-            headers={"Authorization": f"Bearer {self.api_key}"},
-            json=payload,
-        )
-        resp.raise_for_status()
+        try:
+            resp = await client.post(
+                "/chat/completions",
+                headers={"Authorization": f"Bearer {self.api_key}"},
+                json=payload,
+            )
+            resp.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            # Log response body to diagnose 4xx/5xx errors from Grok.
+            body = exc.response.text if exc.response is not None else ""
+            logger.error(
+                "Grok chat request failed status=%s url=%s body=%s",
+                getattr(exc.response, "status_code", ""),
+                getattr(exc.request, "url", ""),
+                body,
+            )
+            # Re-raise with body attached for upstream logging/recording.
+            raise httpx.HTTPStatusError(
+                f"{exc}. Response body: {body}",
+                request=exc.request,
+                response=exc.response,
+            )
+
         data = resp.json()
         choice = data["choices"][0]["message"]["content"]
         usage = data.get("usage", {})
